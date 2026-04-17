@@ -172,6 +172,11 @@ resource "aws_cloudfront_distribution" "dist" {
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
+
+    custom_header {
+      name  = "x-api-key"
+      value = var.api_key
+    }
   }
 
   default_cache_behavior {
@@ -257,6 +262,7 @@ variable "api_gateway_domain_name" { type = string }
 variable "acm_certificate_arn" { type = string }
 variable "basic_auth_user" { type = string }
 variable "basic_auth_password" { type = string }
+variable "api_key" { type = string }
 
 output "distribution_id" { value = aws_cloudfront_distribution.dist.id }
 output "distribution_arn" { value = aws_cloudfront_distribution.dist.arn }

@@ -11,6 +11,11 @@ resource "aws_kms_alias" "main" {
   target_key_id = aws_kms_key.main.key_id
 }
 
+resource "random_password" "api_key" {
+  length  = 32
+  special = false
+}
+
 module "s3" {
   source                      = "./s3"
   bucket_name                 = "jyatesdotdev-static-site"
@@ -52,6 +57,7 @@ module "api_gateway" {
   admin_lambda_arn         = module.lambda.admin_lambda_arn
   authorizer_lambda_arn    = module.lambda.authorizer_lambda_arn
   kms_key_arn              = aws_kms_key.main.arn
+  api_key                  = random_password.api_key.result
 }
 
 module "cloudfront" {
@@ -64,6 +70,7 @@ module "cloudfront" {
   acm_certificate_arn     = aws_acm_certificate.cert.arn
   basic_auth_user         = var.admin_username
   basic_auth_password     = var.admin_password
+  api_key                 = random_password.api_key.result
 }
 
 module "ses" {

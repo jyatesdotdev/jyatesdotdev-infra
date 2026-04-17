@@ -33,10 +33,11 @@ resource "aws_api_gateway_resource" "comments" {
 
 # GET /comments
 resource "aws_api_gateway_method" "get_comments" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.comments.id
-  http_method   = "GET"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.comments.id
+  http_method      = "GET"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "get_comments" {
@@ -50,10 +51,11 @@ resource "aws_api_gateway_integration" "get_comments" {
 
 # POST /comments
 resource "aws_api_gateway_method" "post_comments" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.comments.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.comments.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "post_comments" {
@@ -79,10 +81,11 @@ resource "aws_api_gateway_resource" "comment_like" {
 }
 
 resource "aws_api_gateway_method" "post_comment_like" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.comment_like.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.comment_like.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "post_comment_like" {
@@ -102,10 +105,11 @@ resource "aws_api_gateway_resource" "likes" {
 }
 
 resource "aws_api_gateway_method" "get_likes" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.likes.id
-  http_method   = "GET"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.likes.id
+  http_method      = "GET"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "get_likes" {
@@ -118,10 +122,11 @@ resource "aws_api_gateway_integration" "get_likes" {
 }
 
 resource "aws_api_gateway_method" "post_likes" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.likes.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.likes.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "post_likes" {
@@ -141,10 +146,11 @@ resource "aws_api_gateway_resource" "contact" {
 }
 
 resource "aws_api_gateway_method" "post_contact" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.contact.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.contact.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "post_contact" {
@@ -171,11 +177,12 @@ resource "aws_api_gateway_resource" "admin_comments" {
 
 # GET /admin/comments
 resource "aws_api_gateway_method" "get_admin_comments" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.admin_comments.id
-  http_method   = "GET"
-  authorization = "CUSTOM"
-  authorizer_id = aws_api_gateway_authorizer.admin.id
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.admin_comments.id
+  http_method      = "GET"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.admin.id
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "get_admin_comments" {
@@ -195,11 +202,12 @@ resource "aws_api_gateway_resource" "admin_comment_id" {
 }
 
 resource "aws_api_gateway_method" "put_admin_comment" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.admin_comment_id.id
-  http_method   = "PUT"
-  authorization = "CUSTOM"
-  authorizer_id = aws_api_gateway_authorizer.admin.id
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.admin_comment_id.id
+  http_method      = "PUT"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.admin.id
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "put_admin_comment" {
@@ -213,11 +221,12 @@ resource "aws_api_gateway_integration" "put_admin_comment" {
 
 # DELETE /admin/comments/{commentId}
 resource "aws_api_gateway_method" "delete_admin_comment" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.admin_comment_id.id
-  http_method   = "DELETE"
-  authorization = "CUSTOM"
-  authorizer_id = aws_api_gateway_authorizer.admin.id
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.admin_comment_id.id
+  http_method      = "DELETE"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.admin.id
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "delete_admin_comment" {
@@ -346,6 +355,27 @@ variable "contact_lambda_arn" { type = string }
 variable "admin_lambda_arn" { type = string }
 variable "authorizer_lambda_arn" { type = string }
 variable "kms_key_arn" { type = string }
+variable "api_key" { type = string }
+
+resource "aws_api_gateway_api_key" "cloudfront" {
+  name  = "cloudfront-origin-key"
+  value = var.api_key
+}
+
+resource "aws_api_gateway_usage_plan" "cloudfront" {
+  name = "cloudfront-origin-plan"
+  
+  api_stages {
+    api_id = aws_api_gateway_rest_api.api.id
+    stage  = aws_api_gateway_stage.v1.stage_name
+  }
+}
+
+resource "aws_api_gateway_usage_plan_key" "cloudfront" {
+  key_id        = aws_api_gateway_api_key.cloudfront.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.cloudfront.id
+}
 
 output "api_endpoint" {
   value = aws_api_gateway_stage.v1.invoke_url
