@@ -1,0 +1,58 @@
+name: Infrastructure Deployment
+
+on:
+  repository_dispatch:
+    types: [deploy_api, deploy_frontend]
+  workflow_dispatch:
+    inputs:
+      artifact_bucket:
+        description: 'S3 bucket for artifacts'
+        required: false
+      interactions_lambda_key:
+        description: 'S3 key for interactions lambda'
+        required: false
+      contact_lambda_key:
+        description: 'S3 key for contact lambda'
+        required: false
+      admin_lambda_key:
+        description: 'S3 key for admin lambda'
+        required: false
+      authorizer_lambda_key:
+        description: 'S3 key for authorizer lambda'
+        required: false
+
+jobs:
+  terraform:
+    name: 'Terraform Apply'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve \
+            -var="artifact_bucket=${{ github.event.client_payload.artifact_bucket || github.event.inputs.artifact_bucket }}" \
+            -var="interactions_lambda_key=${{ github.event.client_payload.interactions_lambda_key || github.event.inputs.interactions_lambda_key }}" \
+            -var="contact_lambda_key=${{ github.event.client_payload.contact_lambda_key || github.event.inputs.contact_lambda_key }}" \
+            -var="admin_lambda_key=${{ github.event.client_payload.admin_lambda_key || github.event.inputs.admin_lambda_key }}" \
+            -var="authorizer_lambda_key=${{ github.event.client_payload.authorizer_lambda_key || github.event.inputs.authorizer_lambda_key }}" \
+            -var="admin_username=${{ secrets.ADMIN_USERNAME }}" \
+            -var="admin_password=${{ secrets.ADMIN_PASSWORD }}" \
+            -var="ses_from_email=${{ secrets.SES_FROM_EMAIL }}" \
+            -var="ses_admin_email=${{ secrets.SES_ADMIN_EMAIL }}" \
+            -var="recaptcha_secret=${{ secrets.RECAPTCHA_SECRET }}" \
+            -var="terraform_role_arn=${{ secrets.TERRAFORM_ROLE_ARN }}"
