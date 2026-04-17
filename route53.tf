@@ -1,5 +1,12 @@
-data "aws_route53_zone" "main" {
+# Create the hosted zone (Terraform-managed, not imported)
+resource "aws_route53_zone" "main" {
   name = var.domain_name
+}
+
+# Automatically update Name.com nameservers to point at this hosted zone
+resource "namedotcom_domain_nameservers" "delegation" {
+  domain_name = var.domain_name
+  nameservers = aws_route53_zone.main.name_servers
 }
 
 # ACM Validation
@@ -17,7 +24,7 @@ resource "aws_route53_record" "cert_validation" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = data.aws_route53_zone.main.zone_id
+  zone_id         = aws_route53_zone.main.zone_id
 }
 
 resource "aws_acm_certificate_validation" "cert" {
@@ -28,7 +35,7 @@ resource "aws_acm_certificate_validation" "cert" {
 
 # CloudFront Alias
 resource "aws_route53_record" "www" {
-  zone_id = data.aws_route53_zone.main.zone_id
+  zone_id = aws_route53_zone.main.zone_id
   name    = var.domain_name
   type    = "A"
 
@@ -40,7 +47,7 @@ resource "aws_route53_record" "www" {
 }
 
 resource "aws_route53_record" "blog" {
-  zone_id = data.aws_route53_zone.main.zone_id
+  zone_id = aws_route53_zone.main.zone_id
   name    = "blog.${var.domain_name}"
   type    = "A"
 
@@ -54,7 +61,7 @@ resource "aws_route53_record" "blog" {
 # SES DKIM
 resource "aws_route53_record" "ses_dkim" {
   count   = 3
-  zone_id = data.aws_route53_zone.main.zone_id
+  zone_id = aws_route53_zone.main.zone_id
   name    = "${module.ses.dkim_tokens[count.index]}._domainkey.${var.domain_name}"
   type    = "CNAME"
   ttl     = "600"
@@ -63,7 +70,7 @@ resource "aws_route53_record" "ses_dkim" {
 
 # SES SPF (simplified)
 resource "aws_route53_record" "ses_spf" {
-  zone_id = data.aws_route53_zone.main.zone_id
+  zone_id = aws_route53_zone.main.zone_id
   name    = var.domain_name
   type    = "TXT"
   ttl     = "600"

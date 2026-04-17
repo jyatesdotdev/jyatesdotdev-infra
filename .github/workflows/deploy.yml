@@ -55,4 +55,6 @@ jobs:
             -var="ses_from_email=${{ secrets.SES_FROM_EMAIL }}" \
             -var="ses_admin_email=${{ secrets.SES_ADMIN_EMAIL }}" \
             -var="recaptcha_secret=${{ secrets.RECAPTCHA_SECRET }}" \
-            -var="terraform_role_arn=${{ secrets.TERRAFORM_ROLE_ARN }}"
+            -var="terraform_role_arn=${{ secrets.TERRAFORM_ROLE_ARN }}" \
+            -var="namedotcom_username=${{ secrets.NAMEDOTCOM_USERNAME }}" \
+            -var="namedotcom_token=${{ secrets.NAMEDOTCOM_TOKEN }}"

@@ -1,3 +1,14 @@
+variable "namedotcom_username" {
+  description = "Name.com API username"
+  type        = string
+}
+
+variable "namedotcom_token" {
+  description = "Name.com API token"
+  type        = string
+  sensitive   = true
+}
+
 variable "aws_region" {
   description = "The AWS region to deploy resources into"
   type        = string

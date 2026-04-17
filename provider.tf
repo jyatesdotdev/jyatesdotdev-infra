@@ -6,7 +6,16 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    namedotcom = {
+      source  = "lexfrei/namedotcom"
+      version = "~> 2.2"
+    }
   }
+}
+
+provider "namedotcom" {
+  username = var.namedotcom_username
+  token    = var.namedotcom_token
 }
 
 provider "aws" {
