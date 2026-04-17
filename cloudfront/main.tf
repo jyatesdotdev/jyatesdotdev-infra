@@ -128,7 +128,7 @@ resource "aws_wafv2_web_acl" "main" {
 
     statement {
       rate_based_statement {
-        limit              = 1000
+        limit              = 100
         aggregate_key_type = "IP"
       }
     }
@@ -144,6 +144,7 @@ resource "aws_wafv2_web_acl" "main" {
 resource "aws_cloudfront_distribution" "dist" {
   enabled             = true
   is_ipv6_enabled     = true
+  price_class         = "PriceClass_100" # Only use North America and Europe edge locations (cheapest)
   default_root_object = "index.html"
   aliases             = concat([var.domain_name], var.alternative_domain_names)
   web_acl_id          = aws_wafv2_web_acl.main.arn

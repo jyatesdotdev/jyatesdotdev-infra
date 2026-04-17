@@ -143,6 +143,7 @@ resource "aws_lambda_function" "interactions" {
   architectures = ["arm64"]
   s3_bucket     = var.artifact_bucket
   s3_key        = var.interactions_lambda_key
+  reserved_concurrent_executions = 5
 
   depends_on = [aws_cloudwatch_log_group.interactions]
 
@@ -167,6 +168,7 @@ resource "aws_lambda_function" "contact" {
   architectures = ["arm64"]
   s3_bucket     = var.artifact_bucket
   s3_key        = var.contact_lambda_key
+  reserved_concurrent_executions = 3
 
   depends_on = [aws_cloudwatch_log_group.contact]
 
@@ -192,6 +194,7 @@ resource "aws_lambda_function" "admin" {
   architectures = ["arm64"]
   s3_bucket     = var.artifact_bucket
   s3_key        = var.admin_lambda_key
+  reserved_concurrent_executions = 3
 
   depends_on = [aws_cloudwatch_log_group.admin]
 
@@ -215,6 +218,7 @@ resource "aws_lambda_function" "authorizer" {
   architectures = ["arm64"]
   s3_bucket     = var.artifact_bucket
   s3_key        = var.authorizer_lambda_key
+  reserved_concurrent_executions = 5
 
   depends_on = [aws_cloudwatch_log_group.authorizer]
 

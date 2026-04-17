@@ -7,7 +7,7 @@ resource "aws_rum_app_monitor" "monitor" {
   app_monitor_configuration {
     allow_cookies       = true
     enable_xray         = true
-    session_sample_rate = 1.0
+    session_sample_rate = 0.1 # Track 10% of user sessions to control RUM costs
     telemetries         = ["errors", "performance", "http"]
   }
 }

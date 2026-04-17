@@ -294,6 +294,18 @@ resource "aws_api_gateway_stage" "v1" {
   }
 }
 
+# Apply global rate limit to entire API
+resource "aws_api_gateway_method_settings" "global" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  stage_name  = aws_api_gateway_stage.v1.stage_name
+  method_path = "*/*"
+
+  settings {
+    throttling_rate_limit  = 20
+    throttling_burst_limit = 40
+  }
+}
+
 # Permissions for API Gateway to invoke Lambdas
 resource "aws_lambda_permission" "apigw_interactions" {
   statement_id  = "AllowExecutionFromAPIGateway"
