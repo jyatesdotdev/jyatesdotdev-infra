@@ -21,10 +21,6 @@ provider "namedotcom" {
 provider "aws" {
   region = var.aws_region
 
-  assume_role {
-    role_arn = var.terraform_role_arn
-  }
-
   default_tags {
     tags = {
       Project   = "jyatesdotdev"
@@ -36,10 +32,6 @@ provider "aws" {
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
-
-  assume_role {
-    role_arn = var.terraform_role_arn
-  }
 
   default_tags {
     tags = {

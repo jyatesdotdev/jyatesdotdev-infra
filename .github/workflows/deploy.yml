@@ -25,6 +25,9 @@ jobs:
   terraform:
     name: 'Terraform Apply'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,8 +35,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
 
       - name: Setup Terraform
@@ -55,6 +57,5 @@ jobs:
             -var="ses_from_email=${{ secrets.SES_FROM_EMAIL }}" \
             -var="ses_admin_email=${{ secrets.SES_ADMIN_EMAIL }}" \
             -var="recaptcha_secret=${{ secrets.RECAPTCHA_SECRET }}" \
-            -var="terraform_role_arn=${{ secrets.TERRAFORM_ROLE_ARN }}" \
             -var="namedotcom_username=${{ secrets.NAMEDOTCOM_USERNAME }}" \
             -var="namedotcom_token=${{ secrets.NAMEDOTCOM_TOKEN }}"
