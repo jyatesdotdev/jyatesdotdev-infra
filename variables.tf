@@ -15,11 +15,6 @@ variable "aws_region" {
   default     = "us-west-2"
 }
 
-variable "terraform_role_arn" {
-  description = "The ARN of the IAM role to assume for Terraform"
-  type        = string
-}
-
 variable "domain_name" {
   description = "The primary domain name for the website"
   type        = string
