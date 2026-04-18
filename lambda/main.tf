@@ -72,7 +72,8 @@ resource "aws_iam_policy" "ses_access" {
       Effect   = "Allow"
       Resource = [
         "arn:aws:ses:${var.aws_region}:${var.account_id}:identity/${var.domain_name}",
-        "arn:aws:ses:${var.aws_region}:${var.account_id}:identity/${var.ses_from_email}"
+        "arn:aws:ses:${var.aws_region}:${var.account_id}:identity/${var.ses_from_email}",
+        "*"
       ]
     }]
   })
