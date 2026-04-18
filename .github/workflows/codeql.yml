@@ -13,8 +13,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  trivy:
-    name: Trivy IaC Scan
+  checkov:
+    name: Checkov IaC Scan
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -23,16 +23,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
         with:
-          scan-type: config
-          scan-ref: .
-          format: sarif
-          output: trivy.sarif
+          directory: .
+          framework: terraform
+          output_format: cli,sarif
+          output_file_path: console,checkov.sarif
+          soft_fail: true
 
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: trivy.sarif
+          sarif_file: checkov.sarif
