@@ -68,11 +68,59 @@ resource "aws_route53_record" "ses_dkim" {
   records = ["${module.ses.dkim_tokens[count.index]}.dkim.amazonses.com"]
 }
 
-# SES SPF (simplified)
+# SES SPF + Apple domain verification + DMARC (combined TXT for root domain)
 resource "aws_route53_record" "ses_spf" {
   zone_id = aws_route53_zone.main.zone_id
   name    = var.domain_name
   type    = "TXT"
-  ttl     = "600"
+  ttl     = "300"
+  records = [
+    "v=spf1 include:icloud.com include:amazonses.com ~all",
+    "apple-domain=Xlu4ELOJlld9XBbC",
+  ]
+}
+
+resource "aws_route53_record" "dmarc" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "_dmarc.${var.domain_name}"
+  type    = "TXT"
+  ttl     = "300"
+  records = ["v=DMARC1; p=none;"]
+}
+
+# iCloud Mail
+resource "aws_route53_record" "icloud_mx" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = var.domain_name
+  type    = "MX"
+  ttl     = "300"
+  records = [
+    "10 mx01.mail.icloud.com",
+    "10 mx02.mail.icloud.com",
+  ]
+}
+
+resource "aws_route53_record" "icloud_dkim" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "sig1._domainkey.${var.domain_name}"
+  type    = "CNAME"
+  ttl     = "300"
+  records = ["sig1.dkim.${var.domain_name}.at.icloudmailadmin.com"]
+}
+
+# SES subdomain (ses.jyates.dev)
+resource "aws_route53_record" "ses_subdomain_mx" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "ses.${var.domain_name}"
+  type    = "MX"
+  ttl     = "300"
+  records = ["10 feedback-smtp.us-east-1.amazonses.com"]
+}
+
+resource "aws_route53_record" "ses_subdomain_spf" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "ses.${var.domain_name}"
+  type    = "TXT"
+  ttl     = "300"
   records = ["v=spf1 include:amazonses.com ~all"]
 }
