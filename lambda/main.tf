@@ -247,6 +247,11 @@ variable "ses_from_email" { type = string }
 variable "ses_admin_email" { type = string }
 variable "admin_username" { type = string }
 variable "admin_password" { type = string }
+variable "artifact_bucket" { type = string }
+variable "interactions_lambda_key" { type = string }
+variable "contact_lambda_key" { type = string }
+variable "admin_lambda_key" { type = string }
+variable "authorizer_lambda_key" { type = string }
 
 
 output "interactions_lambda_arn" { value = aws_lambda_function.interactions.arn }
