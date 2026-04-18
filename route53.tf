@@ -77,6 +77,8 @@ resource "aws_route53_record" "ses_spf" {
   records = [
     "v=spf1 include:icloud.com include:amazonses.com ~all",
     "apple-domain=Xlu4ELOJlld9XBbC",
+    "mx01.mail.icloud.com",
+    "mx02.mail.icloud.com",
   ]
 }
 
