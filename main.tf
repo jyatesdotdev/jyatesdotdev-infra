@@ -62,6 +62,10 @@ module "api_gateway" {
 
 module "cloudfront" {
   source                  = "./cloudfront"
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
   domain_name             = var.domain_name
   alternative_domain_names = var.alternative_domain_names
   s3_bucket_domain_name   = module.s3.bucket_regional_domain_name

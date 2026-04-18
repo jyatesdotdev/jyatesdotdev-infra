@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    aws = {
+      source                = "hashicorp/aws"
+      configuration_aliases = [aws.us_east_1]
+    }
+  }
+}
+
 resource "aws_cloudfront_origin_access_control" "s3_oac" {
   name                              = "s3-oac"
   description                       = "OAC for S3 static site"
