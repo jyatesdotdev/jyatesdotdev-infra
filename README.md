@@ -14,6 +14,17 @@ Terraform IaC for [jyates.dev](https://jyates.dev) — a fully serverless portfo
 - **Observability**: CloudWatch RUM (real `aws-rum-web` SDK via Cognito Identity Pool for unauthenticated browser access), CloudWatch Dashboard, CloudFront access logs.
 - **CI/CD Security**: Checkov IaC scanning with SARIF upload to GitHub Security tab.
 
+## Repository Structure
+
+This is one of four repositories that make up the site:
+
+| Repository | Visibility | Purpose |
+|---|---|---|
+| **jyatesdotdev-infra** (this repo) | Public | Terraform IaC — all AWS resources |
+| [jyatesdotdev-api](https://github.com/jyatesdotdev/jyatesdotdev-api) | Public | Go Lambda functions |
+| [jyatesdotdev-frontend](https://github.com/jyatesdotdev/jyatesdotdev-frontend) | Public | React SPA |
+| Bootstrap repo (private) | Private | Account-level resources: GitHub OIDC provider, deploy IAM role, S3 artifacts bucket, terraform state bucket. Managed separately to avoid circular dependencies. |
+
 ## How It Works
 
 This repo does **not** deploy on push. It is triggered by:
@@ -51,6 +62,29 @@ If you only need to deploy infra changes without touching Lambda code, you can a
 ```bash
 gh workflow run deploy.yml --repo jyatesdotdev/jyatesdotdev-api --ref main
 ```
+
+## Rollback
+
+**Frontend**: Re-run the frontend workflow at a previous commit. S3 versioning keeps 30 days of previous file versions as a safety net.
+
+```bash
+gh workflow run deploy.yml --repo jyatesdotdev/jyatesdotdev-frontend --ref <previous-commit-sha>
+```
+
+**API**: Re-trigger this repo with a previous SHA's artifact keys (within 14-day retention). Beyond that, re-run the API workflow at the old commit to rebuild.
+
+```bash
+# List available artifact versions
+aws s3 ls s3://<artifacts-bucket>/lambdas/ --profile portfolio --region us-west-2
+```
+
+## Lifecycle Rules
+
+| Bucket | Rule | Retention |
+|---|---|---|
+| Static site | Noncurrent version expiration | 30 days |
+| Access logs | Object expiration | 90 days |
+| Artifacts (bootstrap) | Object expiration | 14 days |
 
 ## State Lock Issues
 
