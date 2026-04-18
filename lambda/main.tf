@@ -26,18 +26,29 @@ resource "aws_iam_policy" "dynamodb_access" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Action = [
-        "dynamodb:GetItem",
-        "dynamodb:PutItem",
-        "dynamodb:UpdateItem",
-        "dynamodb:DeleteItem",
-        "dynamodb:Query",
-        "dynamodb:Scan"
-      ]
-      Effect   = "Allow"
-      Resource = [var.dynamodb_table_arn, "${var.dynamodb_table_arn}/index/GSI1"]
-    }]
+    Statement = [
+      {
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Effect   = "Allow"
+        Resource = [var.dynamodb_table_arn, "${var.dynamodb_table_arn}/index/GSI1"]
+      },
+      {
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:GenerateDataKey"
+        ]
+        Effect   = "Allow"
+        Resource = [var.kms_key_arn]
+      }
+    ]
   })
 }
 
