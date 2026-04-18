@@ -76,6 +76,32 @@ resource "aws_s3_bucket_versioning" "static_site" {
   }
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "static_site" {
+  bucket = aws_s3_bucket.static_site.id
+
+  rule {
+    id     = "expire-old-versions"
+    status = "Enabled"
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    id     = "expire-old-logs"
+    status = "Enabled"
+
+    expiration {
+      days = 90
+    }
+  }
+}
+
 resource "aws_s3_bucket_logging" "static_site" {
   bucket = aws_s3_bucket.static_site.id
 
