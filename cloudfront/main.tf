@@ -62,10 +62,12 @@ function handler(event) {
         uri = '/blog' + uri;
     }
 
-    if (uri.endsWith('/')) {
-        uri += 'index.html';
-    } else if (!uri.includes('.')) {
-        uri += '/index.html';
+    if (!uri.startsWith('/api/')) {
+        if (uri.endsWith('/')) {
+            uri += 'index.html';
+        } else if (!uri.includes('.')) {
+            uri += '/index.html';
+        }
     }
 
     request.uri = uri;
