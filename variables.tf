@@ -30,11 +30,13 @@ variable "alternative_domain_names" {
 variable "admin_username" {
   description = "Username for the admin area"
   type        = string
+  default     = "admin"
 }
 
 variable "admin_password" {
   description = "Password for the admin area"
   type        = string
+  default     = ""
   sensitive   = true
 }
 

@@ -16,6 +16,15 @@ resource "random_password" "api_key" {
   special = false
 }
 
+resource "random_password" "admin_password" {
+  length  = 24
+  special = true
+}
+
+locals {
+  admin_password = var.admin_password != "" ? var.admin_password : random_password.admin_password.result
+}
+
 module "s3" {
   source                      = "./s3"
   bucket_name                 = "jyatesdotdev-static-site"
@@ -40,7 +49,7 @@ module "lambda" {
   ses_from_email      = var.ses_from_email
   ses_admin_email     = var.ses_admin_email
   admin_username      = var.admin_username
-  admin_password      = var.admin_password
+  admin_password      = local.admin_password
   artifact_bucket     = var.artifact_bucket
   interactions_lambda_key = var.interactions_lambda_key
   contact_lambda_key  = var.contact_lambda_key
@@ -73,7 +82,7 @@ module "cloudfront" {
   api_gateway_domain_name = replace(module.api_gateway.api_endpoint, "/^https?://([^/]+).*/", "$1")
   acm_certificate_arn     = aws_acm_certificate.cert.arn
   basic_auth_user         = var.admin_username
-  basic_auth_password     = var.admin_password
+  basic_auth_password     = local.admin_password
   api_key                 = random_password.api_key.result
 }
 
