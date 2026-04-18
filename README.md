@@ -5,10 +5,10 @@ Terraform IaC for [jyates.dev](https://jyates.dev) — a fully serverless portfo
 ## Architecture
 
 - **DNS**: Name.com delegates to Route53. Includes iCloud Mail MX/DKIM records and SES subdomain.
-- **CDN**: CloudFront serves the S3 static site (default origin) and routes `/api/*` to API Gateway. A CloudFront Function rewrites directory paths to `index.html` for SPA support and handles `blog.jyates.dev` subdomain rewriting.
-- **Compute**: API Gateway (REST) → Lambda (Go, ARM64). Four functions: interactions, contact, admin, authorizer.
+- **CDN**: CloudFront serves the S3 static site (default origin) and routes `/api/*` to API Gateway. A CloudFront Function rewrites directory paths to `index.html` for SPA support and handles `blog.jyates.dev` subdomain rewriting. Only 404 errors trigger the SPA fallback (not 403) — this is intentional so API error responses pass through correctly.
+- **Compute**: API Gateway (REST, stage `v1`) → Lambda (Go, ARM64). Four functions: interactions, contact, admin, authorizer. CloudFront's `origin_path = "/v1"` prepends the stage name, so a request to `/api/v1/likes` arrives at API Gateway as `/v1/api/v1/likes` (stage `v1`, resource `/api/v1/likes`).
 - **Storage**: DynamoDB (on-demand) for likes/comments. S3 for static site and access logs.
-- **Email**: SES (sandbox) sends from `blog@jyates.dev` to `me@jyates.dev` for contact form and comment notifications.
+- **Email**: SES sends from `blog@jyates.dev` to `me@jyates.dev` for contact form and comment notifications. Production access requested 2026-04-18; sandbox until approved (only affects sending to unverified addresses).
 - **Security**: WAFv2 rate limiting, API key on API Gateway (injected by CloudFront custom header), KMS encryption on DynamoDB, CSP headers via CloudFront response headers policy.
 - **Auth**: Admin endpoints use Basic Auth via a custom Lambda authorizer. Credentials stored in SSM Parameter Store (auto-generated password).
 - **Observability**: CloudWatch RUM, CloudWatch Dashboard, CloudFront access logs.
