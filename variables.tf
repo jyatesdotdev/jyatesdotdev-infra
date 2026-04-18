@@ -61,24 +61,29 @@ variable "recaptcha_secret" {
 variable "artifact_bucket" {
   description = "The name of the S3 bucket containing Lambda artifacts"
   type        = string
+  default     = ""
 }
 
 variable "interactions_lambda_key" {
   description = "S3 key for the interactions lambda zip"
   type        = string
+  default     = ""
 }
 
 variable "contact_lambda_key" {
   description = "S3 key for the contact lambda zip"
   type        = string
+  default     = ""
 }
 
 variable "admin_lambda_key" {
   description = "S3 key for the admin lambda zip"
   type        = string
+  default     = ""
 }
 
 variable "authorizer_lambda_key" {
   description = "S3 key for the authorizer lambda zip"
   type        = string
+  default     = ""
 }
