@@ -47,43 +47,14 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Resolve Lambda Artifacts
-        id: artifacts
-        run: |
-          BUCKET="${{ github.event.client_payload.artifact_bucket || github.event.inputs.artifact_bucket }}"
-          INTERACTIONS="${{ github.event.client_payload.interactions_lambda_key || github.event.inputs.interactions_lambda_key }}"
-
-          if [ -z "$BUCKET" ] || [ -z "$INTERACTIONS" ]; then
-            # No artifact vars provided — look up the latest from S3
-            BUCKET=$(aws lambda get-function-configuration --function-name jyatesdotdev-interactions --query 'Environment.Variables' --output text 2>/dev/null | head -1 || true)
-            # Get current S3 location from Lambda config
-            CURRENT=$(aws lambda get-function --function-name jyatesdotdev-interactions --query 'Code.Location' --output text 2>/dev/null || true)
-            # Read current s3 bucket/key from terraform state
-            BUCKET=$(terraform show -json | jq -r '.values.root_module.child_modules[]?.resources[]? | select(.address=="module.lambda.aws_lambda_function.interactions") | .values.s3_bucket // empty' 2>/dev/null || true)
-            INTERACTIONS=$(terraform show -json | jq -r '.values.root_module.child_modules[]?.resources[]? | select(.address=="module.lambda.aws_lambda_function.interactions") | .values.s3_key // empty' 2>/dev/null || true)
-            CONTACT=$(terraform show -json | jq -r '.values.root_module.child_modules[]?.resources[]? | select(.address=="module.lambda.aws_lambda_function.contact") | .values.s3_key // empty' 2>/dev/null || true)
-            ADMIN=$(terraform show -json | jq -r '.values.root_module.child_modules[]?.resources[]? | select(.address=="module.lambda.aws_lambda_function.admin") | .values.s3_key // empty' 2>/dev/null || true)
-            AUTHORIZER=$(terraform show -json | jq -r '.values.root_module.child_modules[]?.resources[]? | select(.address=="module.lambda.aws_lambda_function.authorizer") | .values.s3_key // empty' 2>/dev/null || true)
-          else
-            CONTACT="${{ github.event.client_payload.contact_lambda_key || github.event.inputs.contact_lambda_key }}"
-            ADMIN="${{ github.event.client_payload.admin_lambda_key || github.event.inputs.admin_lambda_key }}"
-            AUTHORIZER="${{ github.event.client_payload.authorizer_lambda_key || github.event.inputs.authorizer_lambda_key }}"
-          fi
-
-          echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
-          echo "interactions=$INTERACTIONS" >> $GITHUB_OUTPUT
-          echo "contact=$CONTACT" >> $GITHUB_OUTPUT
-          echo "admin=$ADMIN" >> $GITHUB_OUTPUT
-          echo "authorizer=$AUTHORIZER" >> $GITHUB_OUTPUT
-
       - name: Terraform Apply
         run: |
           terraform apply -auto-approve \
-            -var="artifact_bucket=${{ steps.artifacts.outputs.bucket }}" \
-            -var="interactions_lambda_key=${{ steps.artifacts.outputs.interactions }}" \
-            -var="contact_lambda_key=${{ steps.artifacts.outputs.contact }}" \
-            -var="admin_lambda_key=${{ steps.artifacts.outputs.admin }}" \
-            -var="authorizer_lambda_key=${{ steps.artifacts.outputs.authorizer }}" \
+            -var="artifact_bucket=${{ github.event.client_payload.artifact_bucket || github.event.inputs.artifact_bucket }}" \
+            -var="interactions_lambda_key=${{ github.event.client_payload.interactions_lambda_key || github.event.inputs.interactions_lambda_key }}" \
+            -var="contact_lambda_key=${{ github.event.client_payload.contact_lambda_key || github.event.inputs.contact_lambda_key }}" \
+            -var="admin_lambda_key=${{ github.event.client_payload.admin_lambda_key || github.event.inputs.admin_lambda_key }}" \
+            -var="authorizer_lambda_key=${{ github.event.client_payload.authorizer_lambda_key || github.event.inputs.authorizer_lambda_key }}" \
             -var="recaptcha_secret=${{ secrets.RECAPTCHA_SECRET }}" \
             -var="namedotcom_username=${{ secrets.NAMEDOTCOM_USERNAME }}" \
             -var="namedotcom_token=${{ secrets.NAMEDOTCOM_TOKEN }}"
