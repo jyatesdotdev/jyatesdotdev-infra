@@ -1,40 +1,80 @@
 # jyatesdotdev-infra
 
-This repository holds the Infrastructure as Code (IaC) configuration for `jyates.dev`, orchestrating the entirely serverless AWS architecture.
+Terraform IaC for [jyates.dev](https://jyates.dev) — a fully serverless portfolio site on AWS.
 
-## Overview
+## Architecture
 
-The `jyates.dev` stack is designed for ultra-low base cost, global scale, and hardened DDoS resistance.
+- **DNS**: Name.com delegates to Route53. Includes iCloud Mail MX/DKIM records and SES subdomain.
+- **CDN**: CloudFront serves the S3 static site (default origin) and routes `/api/*` to API Gateway. A CloudFront Function rewrites directory paths to `index.html` for SPA support and handles `blog.jyates.dev` subdomain rewriting.
+- **Compute**: API Gateway (REST) → Lambda (Go, ARM64). Four functions: interactions, contact, admin, authorizer.
+- **Storage**: DynamoDB (on-demand) for likes/comments. S3 for static site and access logs.
+- **Email**: SES (sandbox) sends from `blog@jyates.dev` to `me@jyates.dev` for contact form and comment notifications.
+- **Security**: WAFv2 rate limiting, API key on API Gateway (injected by CloudFront custom header), KMS encryption on DynamoDB, CSP headers via CloudFront response headers policy.
+- **Auth**: Admin endpoints use Basic Auth via a custom Lambda authorizer. Credentials stored in SSM Parameter Store (auto-generated password).
+- **Observability**: CloudWatch RUM, CloudWatch Dashboard, CloudFront access logs.
 
-* **DNS & Content Delivery**: Name.com DNS delegates to AWS Route53. AWS CloudFront handles edge caching and SSL (AWS ACM), distributing traffic between the static S3 SPA and the API Gateway.
-* **Compute Layer**: AWS API Gateway routes traffic to highly restricted AWS Lambda Go functions. 
-* **Database Layer**: Amazon DynamoDB running in `PAY_PER_REQUEST` (On-Demand billing). 
-* **Observability**: AWS CloudWatch RUM handles frontend telemetry. A unified CloudWatch Dashboard tracks requests, error rates, and estimated costs in a single view.
-* **Security & Costs**: 
-    - CloudFront WAF shields against layer 7 DDoS.
-    - API Gateway employs API Keys to restrict raw access.
-    - Lambdas have strict concurrency limits.
-    - AWS Budgets monitor forecasted billing limits.
+## How It Works
 
-## How it works
+This repo does **not** deploy on push. It is triggered by:
 
-This repository acts as the "Brain" of the deployment lifecycle. It does **not** deploy itself on push.
+1. **`repository_dispatch`** from `jyatesdotdev-api` — after the API builds and uploads Lambda zips to S3, it dispatches here with the artifact locations. Terraform updates the Lambda function code.
+2. **`workflow_dispatch`** — manual trigger. When deploying infra-only changes (no Lambda code update), you must provide the current Lambda artifact parameters (see below).
 
-Instead, the `jyatesdotdev-frontend` and `jyatesdotdev-api` repositories listen for pushes to `main`. When either pipeline successfully compiles code, it pings this repository via a GitHub Action `repository_dispatch` webhook.
+A `concurrency` group ensures only one Terraform apply runs at a time. Queued runs wait rather than racing for the state lock.
 
-This repository catches that webhook and runs `terraform apply`, fetching the new ZIPs/Assets and performing a zero-downtime structural update natively inside AWS.
+## Manual Deployment
 
-## Setup & Required Secrets
+When triggering manually via `workflow_dispatch`, you need to provide the Lambda artifact parameters to avoid empty s3_bucket/s3_key errors. Find the latest artifacts:
 
-Terraform requires several API keys to communicate externally. Before GitHub Actions can trigger Terraform, you must deploy these as Repository Secrets:
+```bash
+aws s3 ls s3://jyatesdotdev-artifacts-20260418034108947700000001/lambdas/ \
+  --profile portfolio --region us-west-2
+```
 
-* `AWS_ACCESS_KEY_ID`: Your AWS deployment user credentials.
-* `AWS_SECRET_ACCESS_KEY`: Your AWS deployment user credentials.
-* `TERRAFORM_ROLE_ARN`: The IAM Role Terraform assumes to run operations.
-* `NAMEDOTCOM_USERNAME`: Registrar API username (for automated DNS delegation).
-* `NAMEDOTCOM_TOKEN`: Registrar API key.
-* `ADMIN_USERNAME`: Basic auth username for the dashboard.
-* `ADMIN_PASSWORD`: Basic auth password.
-* `SES_FROM_EMAIL`: Authorized SES sender identity.
-* `SES_ADMIN_EMAIL`: Authorized SES recipient for comment notifications.
-* `RECAPTCHA_SECRET`: Google ReCaptcha v3 server key.
+Then trigger with the latest SHA prefix:
+
+```bash
+BUCKET="jyatesdotdev-artifacts-20260418034108947700000001"
+SHA="<latest-sha-from-above>"
+
+gh workflow run deploy.yml --repo jyatesdotdev/jyatesdotdev-infra --ref main \
+  -f artifact_bucket="$BUCKET" \
+  -f interactions_lambda_key="lambdas/${SHA}/interactions.zip" \
+  -f contact_lambda_key="lambdas/${SHA}/contact.zip" \
+  -f admin_lambda_key="lambdas/${SHA}/admin.zip" \
+  -f authorizer_lambda_key="lambdas/${SHA}/authorizer.zip"
+```
+
+If you only need to deploy infra changes without touching Lambda code, you can also trigger the API workflow first (which will dispatch to infra with the correct artifact vars automatically):
+
+```bash
+gh workflow run deploy.yml --repo jyatesdotdev/jyatesdotdev-api --ref main
+```
+
+## State Lock Issues
+
+Terraform uses S3-based locking. If a run fails mid-apply and leaves a stale lock:
+
+```bash
+aws s3 rm s3://jyatesdotdev-terraform-state/state/terraform.tfstate.tflock \
+  --profile portfolio --region us-east-1
+```
+
+## Required Secrets & Variables
+
+### Secrets
+| Secret | Description |
+|---|---|
+| `AWS_ROLE_ARN` | GitHub OIDC deploy role ARN |
+| `RECAPTCHA_SECRET` | Google reCAPTCHA v3 server key |
+| `NAMEDOTCOM_USERNAME` | Name.com API username |
+| `NAMEDOTCOM_TOKEN` | Name.com API token |
+
+### Key Resources
+| Resource | Identifier |
+|---|---|
+| AWS Account | `944332309257` |
+| State Bucket | `jyatesdotdev-terraform-state` (us-east-1) |
+| Artifacts Bucket | `jyatesdotdev-artifacts-20260418034108947700000001` (us-west-2) |
+| CloudFront Distribution | `E2KZGHUJ0ENT2P` |
+| Route53 Hosted Zone | `Z07569605ER0YACDHV96` |
