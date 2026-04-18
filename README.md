@@ -11,7 +11,8 @@ Terraform IaC for [jyates.dev](https://jyates.dev) — a fully serverless portfo
 - **Email**: SES sends from `blog@jyates.dev` to `me@jyates.dev` for contact form and comment notifications. Production access requested 2026-04-18; sandbox until approved (only affects sending to unverified addresses).
 - **Security**: WAFv2 rate limiting, API key on API Gateway (injected by CloudFront custom header), KMS encryption on DynamoDB, CSP headers via CloudFront response headers policy.
 - **Auth**: Admin endpoints use Basic Auth via a custom Lambda authorizer. Credentials stored in SSM Parameter Store (auto-generated password).
-- **Observability**: CloudWatch RUM (real `aws-rum-web` SDK via Cognito Identity Pool for unauthenticated browser access), CloudWatch Dashboard, CloudFront access logs.
+- **Observability**: CloudWatch RUM (100% sampling, `aws-rum-web` SDK via Cognito Identity Pool for unauthenticated browser access), CloudWatch Dashboard, CloudFront access logs. RUM captures performance, errors, HTTP, and geographic data (country, subdivision, city).
+- **Cost Protection**: RUM budget guard — $10/month hard stop via AWS Budgets action that attaches a deny policy to the Cognito role. Auto-resets on the 1st of each month via EventBridge + Lambda.
 - **CI/CD Security**: Checkov IaC scanning with SARIF upload to GitHub Security tab.
 
 ## Repository Structure
