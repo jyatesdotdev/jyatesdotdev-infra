@@ -127,3 +127,12 @@ module "cloudwatch_rum" {
   source      = "./cloudwatch_rum"
   domain_name = var.domain_name
 }
+
+module "rum_budget_guard" {
+  source         = "./rum_budget_guard"
+  rum_role_arn   = module.cloudwatch_rum.rum_unauth_role_arn
+  rum_role_name  = module.cloudwatch_rum.rum_unauth_role_name
+  admin_email    = var.ses_admin_email
+  monthly_limit  = "10.0"
+  aws_region     = var.aws_region
+}

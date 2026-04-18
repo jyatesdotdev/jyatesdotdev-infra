@@ -56,7 +56,7 @@ resource "aws_rum_app_monitor" "monitor" {
   app_monitor_configuration {
     allow_cookies       = true
     enable_xray         = true
-    session_sample_rate = 0.1
+    session_sample_rate = 1.0
     telemetries         = ["errors", "performance", "http"]
     identity_pool_id    = aws_cognito_identity_pool.rum.id
     guest_role_arn      = aws_iam_role.rum_unauth.arn
@@ -67,3 +67,5 @@ variable "domain_name" { type = string }
 
 output "rum_id" { value = aws_rum_app_monitor.monitor.id }
 output "rum_identity_pool_id" { value = aws_cognito_identity_pool.rum.id }
+output "rum_unauth_role_arn" { value = aws_iam_role.rum_unauth.arn }
+output "rum_unauth_role_name" { value = aws_iam_role.rum_unauth.name }
