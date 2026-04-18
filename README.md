@@ -11,7 +11,8 @@ Terraform IaC for [jyates.dev](https://jyates.dev) — a fully serverless portfo
 - **Email**: SES sends from `blog@jyates.dev` to `me@jyates.dev` for contact form and comment notifications. Production access requested 2026-04-18; sandbox until approved (only affects sending to unverified addresses).
 - **Security**: WAFv2 rate limiting, API key on API Gateway (injected by CloudFront custom header), KMS encryption on DynamoDB, CSP headers via CloudFront response headers policy.
 - **Auth**: Admin endpoints use Basic Auth via a custom Lambda authorizer. Credentials stored in SSM Parameter Store (auto-generated password).
-- **Observability**: CloudWatch RUM, CloudWatch Dashboard, CloudFront access logs.
+- **Observability**: CloudWatch RUM (real `aws-rum-web` SDK via Cognito Identity Pool for unauthenticated browser access), CloudWatch Dashboard, CloudFront access logs.
+- **CI/CD Security**: Checkov IaC scanning with SARIF upload to GitHub Security tab.
 
 ## How It Works
 
@@ -67,6 +68,7 @@ aws s3 rm s3://<state-bucket>/state/terraform.tfstate.tflock \
 |---|---|
 | `AWS_ROLE_ARN` | GitHub OIDC deploy role ARN |
 | `RECAPTCHA_SECRET` | Google reCAPTCHA v3 server key |
+| `ADMIN_USERNAME` | Admin area username |
 | `NAMEDOTCOM_USERNAME` | Name.com API username |
 | `NAMEDOTCOM_TOKEN` | Name.com API token |
 
