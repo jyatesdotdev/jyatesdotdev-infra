@@ -56,11 +56,19 @@ resource "aws_cloudfront_function" "subdomain_rewrite" {
 function handler(event) {
     var request = event.request;
     var host = request.headers.host.value;
+    var uri = request.uri;
 
-    if (host === 'blog.jyates.dev' && !request.uri.startsWith('/blog')) {
-        request.uri = '/blog' + request.uri;
+    if (host === 'blog.jyates.dev' && !uri.startsWith('/blog')) {
+        uri = '/blog' + uri;
     }
 
+    if (uri.endsWith('/')) {
+        uri += 'index.html';
+    } else if (!uri.includes('.')) {
+        uri += '/index.html';
+    }
+
+    request.uri = uri;
     return request;
 }
 EOF
