@@ -81,7 +81,7 @@ resource "aws_cloudfront_response_headers_policy" "security" {
 
   security_headers_config {
     content_security_policy {
-      content_security_policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://*.amazonaws.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.amazonaws.com; connect-src 'self' https://www.google.com/recaptcha/ https://*.amazonaws.com; frame-src 'self' https://www.google.com/recaptcha/; frame-ancestors 'none';"
+      content_security_policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://*.amazonaws.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.amazonaws.com; connect-src 'self' https://www.google.com/recaptcha/ https://*.amazonaws.com https://www.plantuml.com; frame-src 'self' https://www.google.com/recaptcha/; frame-ancestors 'none';"
       override                = true
     }
     content_type_options {
