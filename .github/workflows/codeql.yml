@@ -9,6 +9,9 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   tfsec:
     name: tfsec
@@ -26,7 +29,7 @@ jobs:
           sarif_file: tfsec.sarif
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: tfsec.sarif
