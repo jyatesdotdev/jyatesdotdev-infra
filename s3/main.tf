@@ -113,6 +113,22 @@ data "aws_iam_policy_document" "static_site" {
       values   = [var.cloudfront_distribution_arn]
     }
   }
+
+  statement {
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.static_site.arn]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [var.cloudfront_distribution_arn]
+    }
+  }
 }
 
 variable "bucket_name" {

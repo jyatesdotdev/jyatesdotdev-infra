@@ -81,7 +81,7 @@ resource "aws_cloudfront_response_headers_policy" "security" {
 
   security_headers_config {
     content_security_policy {
-      content_security_policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.amazonaws.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.amazonaws.com; connect-src 'self' https://*.amazonaws.com; frame-ancestors 'none';"
+      content_security_policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://*.amazonaws.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.amazonaws.com; connect-src 'self' https://www.google.com/recaptcha/ https://*.amazonaws.com; frame-src 'self' https://www.google.com/recaptcha/; frame-ancestors 'none';"
       override                = true
     }
     content_type_options {
@@ -259,17 +259,10 @@ resource "aws_cloudfront_distribution" "dist" {
   }
 
   custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 0
-  }
-
-  custom_error_response {
     error_code            = 404
     response_code         = 200
     response_page_path    = "/index.html"
-    error_caching_min_ttl = 0
+    error_caching_min_ttl = 10
   }
 }
 

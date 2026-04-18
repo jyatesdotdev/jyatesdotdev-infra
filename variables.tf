@@ -43,7 +43,7 @@ variable "admin_password" {
 variable "ses_from_email" {
   description = "The email address to send emails from"
   type        = string
-  default     = "blog@ses.jyates.dev"
+  default     = "blog@jyates.dev"
 }
 
 variable "ses_admin_email" {
