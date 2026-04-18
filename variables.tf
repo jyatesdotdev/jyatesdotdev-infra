@@ -41,11 +41,13 @@ variable "admin_password" {
 variable "ses_from_email" {
   description = "The email address to send emails from"
   type        = string
+  default     = "blog@ses.jyates.dev"
 }
 
 variable "ses_admin_email" {
   description = "The admin email address to receive notifications"
   type        = string
+  default     = "me@jyates.dev"
 }
 
 variable "recaptcha_secret" {
