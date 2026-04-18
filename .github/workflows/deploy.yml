@@ -56,5 +56,6 @@ jobs:
             -var="admin_lambda_key=${{ github.event.client_payload.admin_lambda_key || github.event.inputs.admin_lambda_key }}" \
             -var="authorizer_lambda_key=${{ github.event.client_payload.authorizer_lambda_key || github.event.inputs.authorizer_lambda_key }}" \
             -var="recaptcha_secret=${{ secrets.RECAPTCHA_SECRET }}" \
+            -var="admin_username=${{ secrets.ADMIN_USERNAME }}" \
             -var="namedotcom_username=${{ secrets.NAMEDOTCOM_USERNAME }}" \
             -var="namedotcom_token=${{ secrets.NAMEDOTCOM_TOKEN }}"

@@ -27,14 +27,14 @@ A `concurrency` group ensures only one Terraform apply runs at a time. Queued ru
 When triggering manually via `workflow_dispatch`, you need to provide the Lambda artifact parameters to avoid empty s3_bucket/s3_key errors. Find the latest artifacts:
 
 ```bash
-aws s3 ls s3://jyatesdotdev-artifacts-20260418034108947700000001/lambdas/ \
+aws s3 ls s3://<artifacts-bucket>/lambdas/ \
   --profile portfolio --region us-west-2
 ```
 
 Then trigger with the latest SHA prefix:
 
 ```bash
-BUCKET="jyatesdotdev-artifacts-20260418034108947700000001"
+BUCKET="<artifacts-bucket>"
 SHA="<latest-sha-from-above>"
 
 gh workflow run deploy.yml --repo jyatesdotdev/jyatesdotdev-infra --ref main \
@@ -56,7 +56,7 @@ gh workflow run deploy.yml --repo jyatesdotdev/jyatesdotdev-api --ref main
 Terraform uses S3-based locking. If a run fails mid-apply and leaves a stale lock:
 
 ```bash
-aws s3 rm s3://jyatesdotdev-terraform-state/state/terraform.tfstate.tflock \
+aws s3 rm s3://<state-bucket>/state/terraform.tfstate.tflock \
   --profile portfolio --region us-east-1
 ```
 
@@ -71,10 +71,5 @@ aws s3 rm s3://jyatesdotdev-terraform-state/state/terraform.tfstate.tflock \
 | `NAMEDOTCOM_TOKEN` | Name.com API token |
 
 ### Key Resources
-| Resource | Identifier |
-|---|---|
-| AWS Account | `944332309257` |
-| State Bucket | `jyatesdotdev-terraform-state` (us-east-1) |
-| Artifacts Bucket | `jyatesdotdev-artifacts-20260418034108947700000001` (us-west-2) |
-| CloudFront Distribution | `E2KZGHUJ0ENT2P` |
-| Route53 Hosted Zone | `Z07569605ER0YACDHV96` |
+
+Resource identifiers (account ID, bucket names, distribution IDs) are intentionally omitted from this public README. Refer to terraform state or AWS console for operational reference.

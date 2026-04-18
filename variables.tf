@@ -30,7 +30,7 @@ variable "alternative_domain_names" {
 variable "admin_username" {
   description = "Username for the admin area"
   type        = string
-  default     = "admin"
+  sensitive   = true
 }
 
 variable "admin_password" {
