@@ -138,6 +138,70 @@ resource "aws_api_gateway_integration" "post_likes" {
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
 }
 
+# --- Geo & Visits (visitor map) ---
+resource "aws_api_gateway_resource" "geo" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.v1.id
+  path_part   = "geo"
+}
+
+resource "aws_api_gateway_method" "get_geo" {
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.geo.id
+  http_method      = "GET"
+  authorization    = "NONE"
+  api_key_required = true
+}
+
+resource "aws_api_gateway_integration" "get_geo" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.geo.id
+  http_method             = aws_api_gateway_method.get_geo.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+}
+
+resource "aws_api_gateway_resource" "visits" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.v1.id
+  path_part   = "visits"
+}
+
+resource "aws_api_gateway_method" "get_visits" {
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.visits.id
+  http_method      = "GET"
+  authorization    = "NONE"
+  api_key_required = true
+}
+
+resource "aws_api_gateway_integration" "get_visits" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.visits.id
+  http_method             = aws_api_gateway_method.get_visits.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+}
+
+resource "aws_api_gateway_method" "post_visits" {
+  rest_api_id      = aws_api_gateway_rest_api.api.id
+  resource_id      = aws_api_gateway_resource.visits.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = true
+}
+
+resource "aws_api_gateway_integration" "post_visits" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.visits.id
+  http_method             = aws_api_gateway_method.post_visits.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+}
+
 # --- Contact ---
 resource "aws_api_gateway_resource" "contact" {
   rest_api_id = aws_api_gateway_rest_api.api.id
@@ -281,9 +345,27 @@ resource "aws_api_gateway_deployment" "api" {
     aws_api_gateway_integration.get_admin_comments,
     aws_api_gateway_integration.put_admin_comment,
     aws_api_gateway_integration.delete_admin_comment,
+    aws_api_gateway_integration.get_geo,
+    aws_api_gateway_integration.get_visits,
+    aws_api_gateway_integration.post_visits,
   ]
 
   rest_api_id = aws_api_gateway_rest_api.api.id
+
+  # A REST API deployment is a snapshot: without a trigger, adding new
+  # resources/methods would never reach the stage.
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.geo.id,
+      aws_api_gateway_method.get_geo.id,
+      aws_api_gateway_integration.get_geo.id,
+      aws_api_gateway_resource.visits.id,
+      aws_api_gateway_method.get_visits.id,
+      aws_api_gateway_integration.get_visits.id,
+      aws_api_gateway_method.post_visits.id,
+      aws_api_gateway_integration.post_visits.id,
+    ]))
+  }
 
   lifecycle {
     create_before_destroy = true
