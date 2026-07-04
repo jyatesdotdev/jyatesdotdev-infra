@@ -121,17 +121,21 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
 
-# Like Managed-CachingDisabled (all TTLs 0), but whitelisting the
-# CloudFront-Viewer-* geo headers. CloudFront only generates these headers
+# Whitelists the CloudFront-Viewer-* geo headers so CloudFront generates them
+# and forwards them to the API origin. CloudFront only generates these headers
 # when a cache policy or origin request policy asks for them; putting them in
-# the cache policy lets us keep the managed AllViewerExceptHostHeader origin
-# request policy (forwarding the viewer Host header would break API Gateway).
+# the cache policy keeps the managed AllViewerExceptHostHeader origin request
+# policy (forwarding the viewer Host header would break the API Gateway origin).
+#
+# CloudFront rejects header whitelisting when a cache policy has caching fully
+# disabled (all TTLs 0), so max_ttl is 1. Caching stays effectively off:
+# default_ttl is 0 and the API sends no Cache-Control, so nothing is cached.
 resource "aws_cloudfront_cache_policy" "api_with_geo_headers" {
-  name        = "api-caching-disabled-with-geo-headers"
-  comment     = "No caching; forwards CloudFront geo headers to the API origin"
+  name        = "api-geo-headers-no-cache"
+  comment     = "Forwards CloudFront geo headers to the API origin; no effective caching"
   min_ttl     = 0
   default_ttl = 0
-  max_ttl     = 0
+  max_ttl     = 1
 
   parameters_in_cache_key_and_forwarded_to_origin {
     enable_accept_encoding_gzip   = false
