@@ -52,6 +52,18 @@ as string literals — keep in sync if renaming).
   the API key rides a plaintext `x-api-key` origin header — both are in state by design.
 - The `subdomain_rewrite` function hardcodes `blog.jyates.dev`.
 - SPA fallback maps 404→200 `/index.html` (404 only, not 403 — intentional).
+- **`aws_cloudfront_cache_policy.api_with_geo_headers` has `max_ttl = 1`, not 0** —
+  it whitelists the CloudFront-Viewer-* geo headers so they reach the API origin
+  (powers the visitor map / whereami), and CloudFront rejects header whitelisting on a
+  cache policy with caching fully disabled (all TTLs 0). `default_ttl` is 0 and the API
+  sends no Cache-Control, so nothing is actually cached. Don't "simplify" it back to 0.
+
+## Scripts
+
+`scripts/backfill_rum_geo.py` — one-time import of CloudWatch RUM history into the
+visitor-map counters (distinct sessions per country → STATS#GEO items). Idempotent
+via a `BACKFILL#<tag>` marker item guarded by `attribute_not_exists`; re-runs skip.
+Uses the AWS CLI (no boto3). Already applied once with tag `rum-30d`.
 
 ## Commands / CI
 
