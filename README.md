@@ -102,7 +102,6 @@ aws s3 rm s3://<state-bucket>/state/terraform.tfstate.tflock \
 | Secret | Description |
 |---|---|
 | `AWS_ROLE_ARN` | GitHub OIDC deploy role ARN |
-| `RECAPTCHA_SECRET` | Google reCAPTCHA v3 server key |
 | `ADMIN_USERNAME` | Admin area username |
 | `NAMEDOTCOM_USERNAME` | Name.com API username |
 | `NAMEDOTCOM_TOKEN` | Name.com API token |

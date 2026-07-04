@@ -1,7 +1,7 @@
 resource "aws_cognito_identity_pool" "rum" {
   identity_pool_name               = "jyatesdotdev-rum"
   allow_unauthenticated_identities = true
-  allow_classic_flow                = true
+  allow_classic_flow               = true
 }
 
 resource "aws_iam_role" "rum_unauth" {
@@ -10,9 +10,9 @@ resource "aws_iam_role" "rum_unauth" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
+      Effect    = "Allow"
       Principal = { Federated = "cognito-identity.amazonaws.com" }
-      Action = "sts:AssumeRoleWithWebIdentity"
+      Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
           "cognito-identity.amazonaws.com:aud" = aws_cognito_identity_pool.rum.id

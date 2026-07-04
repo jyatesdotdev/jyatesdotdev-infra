@@ -17,11 +17,11 @@ resource "aws_api_gateway_resource" "v1" {
 
 # Authorizer
 resource "aws_api_gateway_authorizer" "admin" {
-  name                   = "admin-authorizer"
-  rest_api_id            = aws_api_gateway_rest_api.api.id
-  authorizer_uri         = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.authorizer_lambda_arn}/invocations"
+  name                             = "admin-authorizer"
+  rest_api_id                      = aws_api_gateway_rest_api.api.id
+  authorizer_uri                   = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.authorizer_lambda_arn}/invocations"
   authorizer_result_ttl_in_seconds = 0
-  type                   = "TOKEN"
+  type                             = "TOKEN"
 }
 
 # --- Comments ---
@@ -41,9 +41,9 @@ resource "aws_api_gateway_method" "get_comments" {
 }
 
 resource "aws_api_gateway_integration" "get_comments" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.comments.id
-  http_method = aws_api_gateway_method.get_comments.http_method
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.comments.id
+  http_method             = aws_api_gateway_method.get_comments.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
@@ -59,9 +59,9 @@ resource "aws_api_gateway_method" "post_comments" {
 }
 
 resource "aws_api_gateway_integration" "post_comments" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.comments.id
-  http_method = aws_api_gateway_method.post_comments.http_method
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.comments.id
+  http_method             = aws_api_gateway_method.post_comments.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
@@ -89,9 +89,9 @@ resource "aws_api_gateway_method" "post_comment_like" {
 }
 
 resource "aws_api_gateway_integration" "post_comment_like" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.comment_like.id
-  http_method = aws_api_gateway_method.post_comment_like.http_method
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.comment_like.id
+  http_method             = aws_api_gateway_method.post_comment_like.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
@@ -113,9 +113,9 @@ resource "aws_api_gateway_method" "get_likes" {
 }
 
 resource "aws_api_gateway_integration" "get_likes" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.likes.id
-  http_method = aws_api_gateway_method.get_likes.http_method
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.likes.id
+  http_method             = aws_api_gateway_method.get_likes.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
@@ -130,9 +130,9 @@ resource "aws_api_gateway_method" "post_likes" {
 }
 
 resource "aws_api_gateway_integration" "post_likes" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.likes.id
-  http_method = aws_api_gateway_method.post_likes.http_method
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.likes.id
+  http_method             = aws_api_gateway_method.post_likes.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
@@ -154,9 +154,9 @@ resource "aws_api_gateway_method" "post_contact" {
 }
 
 resource "aws_api_gateway_integration" "post_contact" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.contact.id
-  http_method = aws_api_gateway_method.post_contact.http_method
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.contact.id
+  http_method             = aws_api_gateway_method.post_contact.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.contact_lambda_arn}/invocations"
@@ -186,9 +186,9 @@ resource "aws_api_gateway_method" "get_admin_comments" {
 }
 
 resource "aws_api_gateway_integration" "get_admin_comments" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.admin_comments.id
-  http_method = aws_api_gateway_method.get_admin_comments.http_method
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.admin_comments.id
+  http_method             = aws_api_gateway_method.get_admin_comments.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.admin_lambda_arn}/invocations"
@@ -211,9 +211,9 @@ resource "aws_api_gateway_method" "put_admin_comment" {
 }
 
 resource "aws_api_gateway_integration" "put_admin_comment" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.admin_comment_id.id
-  http_method = aws_api_gateway_method.put_admin_comment.http_method
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.admin_comment_id.id
+  http_method             = aws_api_gateway_method.put_admin_comment.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.admin_lambda_arn}/invocations"
@@ -230,9 +230,9 @@ resource "aws_api_gateway_method" "delete_admin_comment" {
 }
 
 resource "aws_api_gateway_integration" "delete_admin_comment" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.admin_comment_id.id
-  http_method = aws_api_gateway_method.delete_admin_comment.http_method
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.admin_comment_id.id
+  http_method             = aws_api_gateway_method.delete_admin_comment.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.admin_lambda_arn}/invocations"
@@ -364,7 +364,7 @@ resource "aws_api_gateway_api_key" "cloudfront" {
 
 resource "aws_api_gateway_usage_plan" "cloudfront" {
   name = "cloudfront-origin-plan"
-  
+
   api_stages {
     api_id = aws_api_gateway_rest_api.api.id
     stage  = aws_api_gateway_stage.v1.stage_name

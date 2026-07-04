@@ -52,12 +52,6 @@ variable "ses_admin_email" {
   default     = "me@jyates.dev"
 }
 
-variable "recaptcha_secret" {
-  description = "The secret key for ReCAPTCHA v3"
-  type        = string
-  sensitive   = true
-}
-
 variable "artifact_bucket" {
   description = "The name of the S3 bucket containing Lambda artifacts"
   type        = string

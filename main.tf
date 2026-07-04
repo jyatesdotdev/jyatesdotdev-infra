@@ -16,8 +16,8 @@ resource "aws_kms_key" "main" {
         Resource  = "*"
       },
       {
-        Sid    = "AllowCloudWatchLogs"
-        Effect = "Allow"
+        Sid       = "AllowCloudWatchLogs"
+        Effect    = "Allow"
         Principal = { Service = "logs.${var.aws_region}.amazonaws.com" }
         Action = [
           "kms:Encrypt",
@@ -69,23 +69,22 @@ module "dynamodb" {
 }
 
 module "lambda" {
-  source              = "./lambda"
-  aws_region          = var.aws_region
-  account_id          = data.aws_caller_identity.current.account_id
-  domain_name         = var.domain_name
-  kms_key_arn         = aws_kms_key.main.arn
-  dynamodb_table_name = module.dynamodb.table_name
-  dynamodb_table_arn  = module.dynamodb.table_arn
-  recaptcha_secret    = var.recaptcha_secret
-  ses_from_email      = var.ses_from_email
-  ses_admin_email     = var.ses_admin_email
-  admin_username      = var.admin_username
-  admin_password      = local.admin_password
-  artifact_bucket     = var.artifact_bucket
+  source                  = "./lambda"
+  aws_region              = var.aws_region
+  account_id              = data.aws_caller_identity.current.account_id
+  domain_name             = var.domain_name
+  kms_key_arn             = aws_kms_key.main.arn
+  dynamodb_table_name     = module.dynamodb.table_name
+  dynamodb_table_arn      = module.dynamodb.table_arn
+  ses_from_email          = var.ses_from_email
+  ses_admin_email         = var.ses_admin_email
+  admin_username          = var.admin_username
+  admin_password          = local.admin_password
+  artifact_bucket         = var.artifact_bucket
   interactions_lambda_key = var.interactions_lambda_key
-  contact_lambda_key  = var.contact_lambda_key
-  admin_lambda_key    = var.admin_lambda_key
-  authorizer_lambda_key = var.authorizer_lambda_key
+  contact_lambda_key      = var.contact_lambda_key
+  admin_lambda_key        = var.admin_lambda_key
+  authorizer_lambda_key   = var.authorizer_lambda_key
 }
 
 module "api_gateway" {
@@ -101,20 +100,20 @@ module "api_gateway" {
 }
 
 module "cloudfront" {
-  source                  = "./cloudfront"
+  source = "./cloudfront"
   providers = {
     aws           = aws
     aws.us_east_1 = aws.us_east_1
   }
-  domain_name             = var.domain_name
-  alternative_domain_names = var.alternative_domain_names
-  s3_bucket_domain_name   = module.s3.bucket_regional_domain_name
+  domain_name                   = var.domain_name
+  alternative_domain_names      = var.alternative_domain_names
+  s3_bucket_domain_name         = module.s3.bucket_regional_domain_name
   s3_logging_bucket_domain_name = module.s3.logs_bucket_domain_name
-  api_gateway_domain_name = replace(module.api_gateway.api_endpoint, "/^https?://([^/]+).*/", "$1")
-  acm_certificate_arn     = aws_acm_certificate.cert.arn
-  basic_auth_user         = var.admin_username
-  basic_auth_password     = local.admin_password
-  api_key                 = random_password.api_key.result
+  api_gateway_domain_name       = replace(module.api_gateway.api_endpoint, "/^https?://([^/]+).*/", "$1")
+  acm_certificate_arn           = aws_acm_certificate.cert.arn
+  basic_auth_user               = var.admin_username
+  basic_auth_password           = local.admin_password
+  api_key                       = random_password.api_key.result
 }
 
 module "ses" {
@@ -129,10 +128,10 @@ module "cloudwatch_rum" {
 }
 
 module "rum_budget_guard" {
-  source         = "./rum_budget_guard"
-  rum_role_arn   = module.cloudwatch_rum.rum_unauth_role_arn
-  rum_role_name  = module.cloudwatch_rum.rum_unauth_role_name
-  admin_email    = var.ses_admin_email
-  monthly_limit  = "10.0"
-  aws_region     = var.aws_region
+  source        = "./rum_budget_guard"
+  rum_role_arn  = module.cloudwatch_rum.rum_unauth_role_arn
+  rum_role_name = module.cloudwatch_rum.rum_unauth_role_name
+  admin_email   = var.ses_admin_email
+  monthly_limit = "10.0"
+  aws_region    = var.aws_region
 }

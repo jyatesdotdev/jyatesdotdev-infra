@@ -36,6 +36,11 @@ resource "aws_dynamodb_table" "state" {
     kms_key_arn = var.kms_key_arn
   }
 
+  ttl {
+    attribute_name = "expiresAt"
+    enabled        = true
+  }
+
   point_in_time_recovery {
     enabled = true
   }

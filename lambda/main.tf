@@ -69,7 +69,7 @@ resource "aws_iam_policy" "ses_access" {
         "ses:SendEmail",
         "ses:SendRawEmail"
       ]
-      Effect   = "Allow"
+      Effect = "Allow"
       Resource = [
         "arn:aws:ses:${var.aws_region}:${var.account_id}:identity/*"
       ]
@@ -162,8 +162,10 @@ resource "aws_lambda_function" "interactions" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE_NAME  = var.dynamodb_table_name
-      RECAPTCHA_SECRET_KEY = var.recaptcha_secret
+      DYNAMODB_TABLE_NAME = var.dynamodb_table_name
+      SES_FROM_EMAIL      = var.ses_from_email
+      SES_ADMIN_EMAIL     = var.ses_admin_email
+      AUTO_APPROVE        = "true"
     }
   }
 }
@@ -186,9 +188,8 @@ resource "aws_lambda_function" "contact" {
 
   environment {
     variables = {
-      SES_FROM_EMAIL       = var.ses_from_email
-      SES_ADMIN_EMAIL      = var.ses_admin_email
-      RECAPTCHA_SECRET_KEY = var.recaptcha_secret
+      SES_FROM_EMAIL  = var.ses_from_email
+      SES_ADMIN_EMAIL = var.ses_admin_email
     }
   }
 }
@@ -248,7 +249,6 @@ variable "domain_name" { type = string }
 variable "kms_key_arn" { type = string }
 variable "dynamodb_table_name" { type = string }
 variable "dynamodb_table_arn" { type = string }
-variable "recaptcha_secret" { type = string }
 variable "ses_from_email" { type = string }
 variable "ses_admin_email" { type = string }
 variable "admin_username" { type = string }
