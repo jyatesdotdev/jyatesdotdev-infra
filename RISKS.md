@@ -78,6 +78,12 @@ Its only real value was throttling a single hot IP.
    `terraform apply`) to restore the per-IP edge rate limit. Everything here is
    fully reversible.
 
+   ⚠️ Teardown ordering (learned during the 2026-07-04 removal): if the WAF is
+   ever removed again, deleting a web ACL that is still associated with the
+   CloudFront distribution fails with `WAFAssociatedItemException`. Disassociate
+   first — apply the distribution change (drop `web_acl_id`) and let it deploy,
+   then delete the ACL in a second apply.
+
 ### Cost impact
 
 Total bill ~$7.55/mo → ~$1.53/mo (saves ~$6.02/mo, ~$72/yr).

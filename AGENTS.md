@@ -32,11 +32,13 @@ private bootstrap repo — not here.
 
 `s3` (site + logs buckets, OAC-only policy) · `cloudfront` (distribution, CloudFront
 Functions for /admin basic-auth + blog-subdomain/index rewrites, response-headers policy
-with CSP) · `api_gateway` (REST API, stage `v1`, TOKEN authorizer, API key) ·
-`lambda` (4 Go functions from S3 artifacts: interactions/contact/admin/authorizer, SSM
-admin params) · `dynamodb` (`jyatesdotdev-state`, PK/SK + GSI1, PAY_PER_REQUEST) ·
-`ses` (domain identity + DKIM) · `cloudwatch_rum` (app monitor, 100% sampling, Cognito
-unauth role) · `rum_budget_guard` (budget kill-switch + reset Lambda).
+with CSP) · `api_gateway` (REST API, stage `v1`, TOKEN authorizer, API key — **has its
+own AGENTS.md**, incl. the deployment-trigger trap) · `lambda` (4 Go functions from S3
+artifacts: interactions/contact/admin/authorizer, SSM admin params) · `dynamodb`
+(`jyatesdotdev-state`, PK/SK + GSI1, PAY_PER_REQUEST) · `ses` (domain identity + DKIM +
+verified admin email identity) · `cloudwatch_rum` (app monitor, 100% sampling, Cognito
+unauth role) · `rum_budget_guard` (budget kill-switch + reset Lambda — **has its own
+AGENTS.md**).
 
 Root files: `acm.tf` (cert, us-east-1), `route53.tf` (zone, delegation, DKIM/SPF/DMARC/
 iCloud mail records), `budgets.tf`, `dashboard.tf` (dashboard references resource names
