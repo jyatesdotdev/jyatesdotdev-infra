@@ -14,8 +14,8 @@ private bootstrap repo — not here.
 1. **Never blind-apply `route53.tf`** — `namedotcom_domain_nameservers` rewrites live
    domain delegation at the registrar; a bad plan breaks DNS (site AND email) for
    jyates.dev.
-2. **ACM cert, WAF, and CloudFront resources must stay on `aws.us_east_1`** — CloudFront
-   only accepts us-east-1 certs/ACLs. Do not "clean up" the provider alias.
+2. **ACM cert and CloudFront resources must stay on `aws.us_east_1`** — CloudFront
+   only accepts us-east-1 certs. Do not "clean up" the provider alias.
 3. **`random_password.api_key` and `random_password.admin_password` live in state.**
    Destroying/recreating them rotates real secrets (CloudFront→APIGW key, admin login).
 4. **`rum_budget_guard` is a real kill-switch**: at $10/mo RUM spend a budget action
@@ -23,7 +23,8 @@ private bootstrap repo — not here.
    (`jyatesdotdev-rum-budget-reset`) is the ONLY thing that removes it. Don't delete
    either half.
 5. Deliberately tiny limits for cost control — don't "fix" them: API Gateway throttle
-   20 rps / 40 burst; WAF rate limit **500 req/5min per IP** (AWS minimum is 100);
+   20 rps / 40 burst; the `cloudfront-origin-plan` usage plan quota **100000 req/DAY**
+   (compensating control after WAF removal — see RISKS.md);
    account-wide $10/mo budget in `budgets.tf` (separate from the RUM budget).
 6. SES is in **sandbox** — only verified identities receive mail.
 
@@ -31,7 +32,7 @@ private bootstrap repo — not here.
 
 `s3` (site + logs buckets, OAC-only policy) · `cloudfront` (distribution, CloudFront
 Functions for /admin basic-auth + blog-subdomain/index rewrites, response-headers policy
-with CSP, WAF) · `api_gateway` (REST API, stage `v1`, TOKEN authorizer, API key) ·
+with CSP) · `api_gateway` (REST API, stage `v1`, TOKEN authorizer, API key) ·
 `lambda` (4 Go functions from S3 artifacts: interactions/contact/admin/authorizer, SSM
 admin params) · `dynamodb` (`jyatesdotdev-state`, PK/SK + GSI1, PAY_PER_REQUEST) ·
 `ses` (domain identity + DKIM) · `cloudwatch_rum` (app monitor, 100% sampling, Cognito
