@@ -165,52 +165,12 @@ resource "aws_cloudfront_cache_policy" "api_with_geo_headers" {
   }
 }
 
-resource "aws_wafv2_web_acl" "main" {
-  provider = aws.us_east_1
-  name     = "jyatesdotdev-waf"
-  scope    = "CLOUDFRONT"
-
-  default_action {
-    allow {}
-  }
-
-  visibility_config {
-    cloudwatch_metrics_enabled = true
-    metric_name                = "jyatesdotdev-waf"
-    sampled_requests_enabled   = true
-  }
-
-  # Basic rate limiting rule
-  rule {
-    name     = "RateLimit"
-    priority = 1
-
-    action {
-      block {}
-    }
-
-    statement {
-      rate_based_statement {
-        limit              = 500
-        aggregate_key_type = "IP"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "RateLimit"
-      sampled_requests_enabled   = true
-    }
-  }
-}
-
 resource "aws_cloudfront_distribution" "dist" {
   enabled             = true
   is_ipv6_enabled     = true
   price_class         = "PriceClass_100" # Only use North America and Europe edge locations (cheapest)
   default_root_object = "index.html"
   aliases             = concat([var.domain_name], var.alternative_domain_names)
-  web_acl_id          = aws_wafv2_web_acl.main.arn
 
   logging_config {
     include_cookies = false

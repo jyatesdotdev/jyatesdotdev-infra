@@ -451,6 +451,22 @@ resource "aws_api_gateway_usage_plan" "cloudfront" {
     api_id = aws_api_gateway_rest_api.api.id
     stage  = aws_api_gateway_stage.v1.stage_name
   }
+
+  # Compensating control for removing the CloudFront WAF (see RISKS.md). A single
+  # shared key carries all CloudFront-routed API traffic, so these caps are
+  # aggregate. The daily quota is the key add: a hard ceiling on API requests
+  # that bounds Lambda/DynamoDB cost even under a distributed flood (which the
+  # removed per-IP WAF rule never stopped anyway). Tune `limit` — lower = tighter
+  # cost cap but risks 429ing a legitimate traffic spike; higher = more headroom.
+  throttle_settings {
+    rate_limit  = 20
+    burst_limit = 40
+  }
+
+  quota_settings {
+    limit  = 100000
+    period = "DAY"
+  }
 }
 
 resource "aws_api_gateway_usage_plan_key" "cloudfront" {

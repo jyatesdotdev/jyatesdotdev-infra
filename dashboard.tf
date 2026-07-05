@@ -68,13 +68,14 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/WAFV2", "AllowedRequests", "Rule", "ALL", "WebACL", "jyatesdotdev-waf", "Region", "Global", { stat = "Sum", color = "#2ca02c" }],
-            [".", "BlockedRequests", ".", ".", ".", ".", ".", ".", { stat = "Sum", color = "#d62728" }]
+            ["AWS/ApiGateway", "Count", "ApiName", "jyatesdotdev-api", "Stage", "v1", { stat = "Sum", color = "#1f77b4" }],
+            [".", "4XXError", ".", ".", ".", ".", { stat = "Sum", color = "#d62728" }],
+            [".", "5XXError", ".", ".", ".", ".", { stat = "Sum", color = "#9467bd" }]
           ]
           view    = "timeSeries"
           stacked = false
-          region  = "us-east-1"
-          title   = "WAF Allowed vs Blocked (DDoS Protection)"
+          region  = var.aws_region
+          title   = "API Gateway Requests & Errors (throttle/quota 429s show as 4XX)"
           period  = 300
         }
       },
