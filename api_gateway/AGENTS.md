@@ -33,6 +33,12 @@ forces a new snapshot. New integrations must still be added to the deployment's
 explicit `depends_on` list so Terraform cannot snapshot the API before creating
 them.
 
+Integration URIs use stable, precomputed Lambda ARNs. Keep them independent of
+`module.lambda` outputs: coupling the deployment snapshot to mutable Lambda
+resources creates a Terraform replacement cycle when roles and the snapshot
+change together. Lambda invoke permissions remain resource-backed so a fresh
+stack still creates functions before their permissions.
+
 ## Cost limits (deliberate — don't "fix"; see RISKS.md)
 
 - Stage-wide `method_settings` throttle: 20 rps / 40 burst.

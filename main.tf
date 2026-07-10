@@ -86,15 +86,19 @@ module "lambda" {
 }
 
 module "api_gateway" {
-  source                   = "./api_gateway"
-  aws_region               = var.aws_region
-  interactions_lambda_arn  = module.lambda.interactions_lambda_arn
-  interactions_lambda_name = module.lambda.interactions_lambda_name
-  contact_lambda_arn       = module.lambda.contact_lambda_arn
-  admin_lambda_arn         = module.lambda.admin_lambda_arn
-  authorizer_lambda_arn    = module.lambda.authorizer_lambda_arn
-  kms_key_arn              = aws_kms_key.main.arn
-  api_key                  = random_password.api_key.result
+  source                              = "./api_gateway"
+  aws_region                          = var.aws_region
+  interactions_lambda_integration_arn = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:jyatesdotdev-interactions"
+  contact_lambda_integration_arn      = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:jyatesdotdev-contact"
+  admin_lambda_integration_arn        = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:jyatesdotdev-admin"
+  authorizer_lambda_integration_arn   = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:jyatesdotdev-authorizer"
+  interactions_lambda_arn             = module.lambda.interactions_lambda_arn
+  interactions_lambda_name            = module.lambda.interactions_lambda_name
+  contact_lambda_arn                  = module.lambda.contact_lambda_arn
+  admin_lambda_arn                    = module.lambda.admin_lambda_arn
+  authorizer_lambda_arn               = module.lambda.authorizer_lambda_arn
+  kms_key_arn                         = aws_kms_key.main.arn
+  api_key                             = random_password.api_key.result
 }
 
 module "cloudfront" {

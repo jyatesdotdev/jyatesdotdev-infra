@@ -23,7 +23,7 @@ resource "aws_api_gateway_resource" "v1" {
 resource "aws_api_gateway_authorizer" "admin" {
   name                             = "admin-authorizer"
   rest_api_id                      = aws_api_gateway_rest_api.api.id
-  authorizer_uri                   = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.authorizer_lambda_arn}/invocations"
+  authorizer_uri                   = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.authorizer_lambda_integration_arn}/invocations"
   authorizer_result_ttl_in_seconds = 0
   type                             = "TOKEN"
 }
@@ -50,7 +50,7 @@ resource "aws_api_gateway_integration" "get_comments" {
   http_method             = aws_api_gateway_method.get_comments.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_integration_arn}/invocations"
 }
 
 # POST /comments
@@ -68,7 +68,7 @@ resource "aws_api_gateway_integration" "post_comments" {
   http_method             = aws_api_gateway_method.post_comments.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_integration_arn}/invocations"
 }
 
 # --- Comment Like ---
@@ -98,7 +98,7 @@ resource "aws_api_gateway_integration" "post_comment_like" {
   http_method             = aws_api_gateway_method.post_comment_like.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_integration_arn}/invocations"
 }
 
 # --- Likes ---
@@ -122,7 +122,7 @@ resource "aws_api_gateway_integration" "get_likes" {
   http_method             = aws_api_gateway_method.get_likes.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_integration_arn}/invocations"
 }
 
 resource "aws_api_gateway_method" "post_likes" {
@@ -139,7 +139,7 @@ resource "aws_api_gateway_integration" "post_likes" {
   http_method             = aws_api_gateway_method.post_likes.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_integration_arn}/invocations"
 }
 
 # --- Geo & Visits (visitor map) ---
@@ -163,7 +163,7 @@ resource "aws_api_gateway_integration" "get_geo" {
   http_method             = aws_api_gateway_method.get_geo.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_integration_arn}/invocations"
 }
 
 resource "aws_api_gateway_resource" "visits" {
@@ -186,7 +186,7 @@ resource "aws_api_gateway_integration" "get_visits" {
   http_method             = aws_api_gateway_method.get_visits.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_integration_arn}/invocations"
 }
 
 resource "aws_api_gateway_method" "post_visits" {
@@ -203,7 +203,7 @@ resource "aws_api_gateway_integration" "post_visits" {
   http_method             = aws_api_gateway_method.post_visits.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.interactions_lambda_integration_arn}/invocations"
 }
 
 # --- Contact ---
@@ -227,7 +227,7 @@ resource "aws_api_gateway_integration" "post_contact" {
   http_method             = aws_api_gateway_method.post_contact.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.contact_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.contact_lambda_integration_arn}/invocations"
 }
 
 # --- Admin ---
@@ -259,7 +259,7 @@ resource "aws_api_gateway_integration" "get_admin_comments" {
   http_method             = aws_api_gateway_method.get_admin_comments.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.admin_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.admin_lambda_integration_arn}/invocations"
 }
 
 # PUT /admin/comments/{commentId}
@@ -284,7 +284,7 @@ resource "aws_api_gateway_integration" "put_admin_comment" {
   http_method             = aws_api_gateway_method.put_admin_comment.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.admin_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.admin_lambda_integration_arn}/invocations"
 }
 
 # DELETE /admin/comments/{commentId}
@@ -303,7 +303,7 @@ resource "aws_api_gateway_integration" "delete_admin_comment" {
   http_method             = aws_api_gateway_method.delete_admin_comment.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.admin_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.admin_lambda_integration_arn}/invocations"
 }
 
 # API Gateway Logging Role
@@ -432,6 +432,10 @@ resource "aws_lambda_permission" "apigw_authorizer" {
 }
 
 variable "aws_region" { type = string }
+variable "interactions_lambda_integration_arn" { type = string }
+variable "contact_lambda_integration_arn" { type = string }
+variable "admin_lambda_integration_arn" { type = string }
+variable "authorizer_lambda_integration_arn" { type = string }
 variable "interactions_lambda_arn" { type = string }
 variable "interactions_lambda_name" { type = string }
 variable "contact_lambda_arn" { type = string }
