@@ -9,7 +9,7 @@ Terraform IaC for [jyates.dev](https://jyates.dev) — a fully serverless portfo
 - **Compute**: API Gateway (REST, stage `v1`) → Lambda (Go, ARM64). Four functions: interactions, contact, admin, authorizer. CloudFront's `origin_path = "/v1"` prepends the stage name, so a request to `/api/v1/likes` arrives at API Gateway as `/v1/api/v1/likes` (stage `v1`, resource `/api/v1/likes`).
 - **Storage**: DynamoDB (on-demand) for likes/comments. S3 for static site and access logs.
 - **Email**: SES sends from `blog@jyates.dev` to `me@jyates.dev` for contact form and comment notifications. Production access requested 2026-04-18; sandbox until approved (only affects sending to unverified addresses).
-- **Security**: API Gateway throttling, per-function reserved concurrency, an API key injected by CloudFront, KMS encryption on DynamoDB, and CSP headers via CloudFront.
+- **Security**: API Gateway throttling, application-level write limits, an API key injected by CloudFront, KMS encryption on DynamoDB, and CSP headers via CloudFront.
 - **Auth**: Admin endpoints use Basic Auth via a custom Lambda authorizer. Credentials are supplied directly to the authorizer; SSM parameters retain an operator-visible record.
 - **Observability**: CloudWatch RUM (100% sampling, `aws-rum-web` SDK via Cognito Identity Pool for unauthenticated browser access), CloudWatch Dashboard, CloudFront access logs. RUM captures performance, errors, HTTP, and geographic data (country, subdivision, city).
 - **Cost Protection**: RUM budget guard — $10/month hard stop via AWS Budgets action that attaches a deny policy to the Cognito role. Auto-resets on the 1st of each month via EventBridge + Lambda.

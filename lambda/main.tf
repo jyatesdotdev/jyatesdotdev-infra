@@ -50,10 +50,21 @@ resource "aws_iam_policy" "dynamodb_access" {
           "dynamodb:PutItem",
           "dynamodb:UpdateItem",
           "dynamodb:DeleteItem",
-          "dynamodb:Query"
+          "dynamodb:Query",
+          "dynamodb:TransactWriteItems"
         ]
         Effect   = "Allow"
         Resource = [var.dynamodb_table_arn, "${var.dynamodb_table_arn}/index/GSI1"]
+      },
+      {
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:DescribeKey"
+        ]
+        Effect   = "Allow"
+        Resource = [var.kms_key_arn]
       }
     ]
   })
@@ -145,8 +156,6 @@ resource "aws_lambda_function" "interactions" {
   s3_key        = var.interactions_lambda_key
   timeout       = 10
 
-  reserved_concurrent_executions = 10
-
   depends_on = [
     aws_cloudwatch_log_group.interactions,
     aws_iam_role_policy_attachment.lambda_logs["interactions"],
@@ -180,8 +189,6 @@ resource "aws_lambda_function" "contact" {
   s3_key        = var.contact_lambda_key
   timeout       = 10
 
-  reserved_concurrent_executions = 2
-
   depends_on = [
     aws_cloudwatch_log_group.contact,
     aws_iam_role_policy_attachment.lambda_logs["contact"],
@@ -214,8 +221,6 @@ resource "aws_lambda_function" "admin" {
   s3_key        = var.admin_lambda_key
   timeout       = 5
 
-  reserved_concurrent_executions = 2
-
   depends_on = [
     aws_cloudwatch_log_group.admin,
     aws_iam_role_policy_attachment.lambda_logs["admin"],
@@ -244,8 +249,6 @@ resource "aws_lambda_function" "authorizer" {
   s3_bucket     = var.artifact_bucket
   s3_key        = var.authorizer_lambda_key
   timeout       = 3
-
-  reserved_concurrent_executions = 5
 
   depends_on = [
     aws_cloudwatch_log_group.authorizer,

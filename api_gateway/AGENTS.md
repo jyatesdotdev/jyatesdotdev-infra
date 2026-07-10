@@ -45,8 +45,8 @@ stack still creates functions before their permissions.
 - Usage plan `cloudfront-origin-plan` (key `cloudfront-origin-key`): same 20/40
 throttle plus a **100000 req/DAY quota**. One shared key carries all
 CloudFront-routed traffic, so both are aggregate controls. API Gateway quotas are
-best effort, not hard cost ceilings; deterministic backend protection comes from
-reserved Lambda concurrency and application-level write limits (see RISKS.md).
+best effort, not hard cost ceilings; application-level write limits provide the
+deterministic state-mutation bounds (see RISKS.md).
 
 ## Misc
 

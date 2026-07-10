@@ -121,51 +121,6 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
 
-# Whitelists the CloudFront-Viewer-* geo headers so CloudFront generates them
-# and forwards them to the API origin. CloudFront only generates these headers
-# when a cache policy or origin request policy asks for them; putting them in
-# the cache policy keeps the managed AllViewerExceptHostHeader origin request
-# policy (forwarding the viewer Host header would break the API Gateway origin).
-#
-# CloudFront rejects header whitelisting when a cache policy has caching fully
-# disabled (all TTLs 0), so max_ttl is 1. Caching stays effectively off:
-# default_ttl is 0 and the API sends no Cache-Control, so nothing is cached.
-resource "aws_cloudfront_cache_policy" "api_with_geo_headers" {
-  name        = "api-geo-headers-no-cache"
-  comment     = "Forwards CloudFront geo headers to the API origin; no effective caching"
-  min_ttl     = 0
-  default_ttl = 0
-  max_ttl     = 1
-
-  parameters_in_cache_key_and_forwarded_to_origin {
-    enable_accept_encoding_gzip   = false
-    enable_accept_encoding_brotli = false
-
-    headers_config {
-      header_behavior = "whitelist"
-      headers {
-        items = [
-          "CloudFront-Viewer-Country",
-          "CloudFront-Viewer-Country-Name",
-          "CloudFront-Viewer-City",
-          "CloudFront-Viewer-Time-Zone",
-          "CloudFront-Viewer-Latitude",
-          "CloudFront-Viewer-Longitude",
-          "CloudFront-Viewer-Address",
-        ]
-      }
-    }
-
-    cookies_config {
-      cookie_behavior = "none"
-    }
-
-    query_strings_config {
-      query_string_behavior = "none"
-    }
-  }
-}
-
 resource "aws_cloudfront_distribution" "dist" {
   enabled             = true
   is_ipv6_enabled     = true
@@ -244,7 +199,7 @@ resource "aws_cloudfront_distribution" "dist" {
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "APIGateway"
 
-    cache_policy_id          = aws_cloudfront_cache_policy.api_with_geo_headers.id
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
 
     response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id

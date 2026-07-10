@@ -32,9 +32,10 @@ Its only real value was throttling a single hot IP.
   AWS documents usage-plan throttles and quotas as best-effort targets, not hard
   request or cost ceilings. They materially reduce sustained load but can be
   exceeded briefly.
-- **Reserved Lambda concurrency**: interactions 10, contact 2, admin 2, and
-  authorizer 5. These are hard concurrent-execution bounds for backend compute;
-  they do not cap billable CloudFront/API Gateway requests.
+- **Account-level Lambda concurrency**: this account's regional quota currently
+  preserves only the required pool of 10 unreserved executions, so project-level
+  reservations cannot be configured. The shared account quota still bounds total
+  concurrent Lambda work, but does not isolate these functions from each other.
 - Pre-existing and unchanged: stage throttle (20/40 aggregate), app-level per-IP
   DynamoDB limits (100 like additions, 20 visits, 10 comments, and 5 contact
   submissions per day), AWS Shield Standard (free, L3/L4 only), CloudFront edge
@@ -44,15 +45,15 @@ Its only real value was throttling a single hot IP.
 ### Accepted residual risks
 
 1. **No per-IP edge rate limit anymore.** A single abusive IP can hit the edge
-   and API harder than before (previously capped to ~1.67 rps). Reserved
-   concurrency bounds simultaneous backend work, while throttles and quotas
-   reduce sustained invocation volume. Static content is edge-cached and cheap.
-   Impact: low for a personal site.
+   and API harder than before (previously capped to ~1.67 rps). The shared account
+   concurrency quota bounds simultaneous Lambda work, while throttles, quotas,
+   and application write limits reduce sustained load. Static content is
+   edge-cached and cheap. Impact: low for a personal site.
 
 2. **Distributed L7 flood is not fully prevented — and never was.** The removed
-   per-IP WAF rule did nothing against a distributed bot. Lambda concurrency is
-   bounded, but CloudFront and API Gateway **request charges** scale with the
-   attacker's send rate (throttled 429s are still billable). The
+   per-IP WAF rule did nothing against a distributed bot. Account-wide Lambda
+   concurrency is bounded, but CloudFront and API Gateway **request charges**
+   scale with the attacker's send rate (throttled 429s are still billable). The
    only backstop is the $10 budget alarm, which is **notification-only and lags
    by hours** — it cannot stop spend. This tail risk is unchanged by removing the
    WAF. Genuine distributed-bot defense (WAF Bot Control, CAPTCHA/Challenge, or a
