@@ -121,6 +121,43 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
 
+# Retain this policy until the distribution has completed its migration to the
+# managed disabled-cache policy. CloudFront rejects deleting an attached policy.
+resource "aws_cloudfront_cache_policy" "api_with_geo_headers" {
+  name        = "api-geo-headers-no-cache"
+  comment     = "Forwards CloudFront geo headers to the API origin; no effective caching"
+  min_ttl     = 0
+  default_ttl = 0
+  max_ttl     = 1
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    enable_accept_encoding_gzip   = false
+    enable_accept_encoding_brotli = false
+
+    headers_config {
+      header_behavior = "whitelist"
+      headers {
+        items = [
+          "CloudFront-Viewer-Country",
+          "CloudFront-Viewer-Country-Name",
+          "CloudFront-Viewer-City",
+          "CloudFront-Viewer-Time-Zone",
+          "CloudFront-Viewer-Latitude",
+          "CloudFront-Viewer-Longitude",
+        ]
+      }
+    }
+
+    cookies_config {
+      cookie_behavior = "none"
+    }
+
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "dist" {
   enabled             = true
   is_ipv6_enabled     = true
