@@ -60,6 +60,9 @@ module "s3" {
   source                      = "./s3"
   bucket_name                 = "jyatesdotdev-static-site"
   cloudfront_distribution_arn = module.cloudfront.distribution_arn
+  notifications_lambda_arn    = module.lambda.notifications_lambda_arn
+  notifications_lambda_name   = module.lambda.notifications_lambda_name
+  account_id                  = data.aws_caller_identity.current.account_id
 }
 
 module "dynamodb" {
@@ -68,21 +71,26 @@ module "dynamodb" {
 }
 
 module "lambda" {
-  source                  = "./lambda"
-  aws_region              = var.aws_region
-  account_id              = data.aws_caller_identity.current.account_id
-  kms_key_arn             = aws_kms_key.main.arn
-  dynamodb_table_name     = module.dynamodb.table_name
-  dynamodb_table_arn      = module.dynamodb.table_arn
-  ses_from_email          = var.ses_from_email
-  ses_admin_email         = var.ses_admin_email
-  admin_username          = var.admin_username
-  admin_password          = local.admin_password
-  artifact_bucket         = var.artifact_bucket
-  interactions_lambda_key = var.interactions_lambda_key
-  contact_lambda_key      = var.contact_lambda_key
-  admin_lambda_key        = var.admin_lambda_key
-  authorizer_lambda_key   = var.authorizer_lambda_key
+  source                   = "./lambda"
+  aws_region               = var.aws_region
+  account_id               = data.aws_caller_identity.current.account_id
+  kms_key_arn              = aws_kms_key.main.arn
+  dynamodb_table_name      = module.dynamodb.table_name
+  dynamodb_table_arn       = module.dynamodb.table_arn
+  ses_from_email           = var.ses_from_email
+  ses_admin_email          = var.ses_admin_email
+  ses_contact_list_name    = module.ses.contact_list_name
+  ses_contact_list_arn     = module.ses.contact_list_arn
+  site_url                 = "https://${var.domain_name}"
+  site_bucket_name         = "jyatesdotdev-static-site"
+  admin_username           = var.admin_username
+  admin_password           = local.admin_password
+  artifact_bucket          = var.artifact_bucket
+  interactions_lambda_key  = var.interactions_lambda_key
+  contact_lambda_key       = var.contact_lambda_key
+  notifications_lambda_key = var.notifications_lambda_key
+  admin_lambda_key         = var.admin_lambda_key
+  authorizer_lambda_key    = var.authorizer_lambda_key
 }
 
 module "api_gateway" {
@@ -122,6 +130,7 @@ module "ses" {
   source      = "./ses"
   domain_name = var.domain_name
   admin_email = var.ses_admin_email
+  aws_region  = var.aws_region
 }
 
 module "cloudwatch_rum" {

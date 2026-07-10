@@ -26,17 +26,18 @@ private bootstrap repo — not here.
    20 rps / 40 burst; the `cloudfront-origin-plan` usage plan quota **100000 req/DAY**
    (best-effort compensating control after WAF removal — see RISKS.md);
    account-wide $10/mo budget in `budgets.tf` (separate from the RUM budget).
-6. SES is in **sandbox** — only verified identities receive mail.
+6. SES is in **sandbox** — only verified identities receive mail. Public content
+   subscriptions require production access before unverified recipients work.
 
 ## Module map
 
 `s3` (site + logs buckets, OAC-only policy) · `cloudfront` (distribution, CloudFront
 Functions for /admin basic-auth + blog-subdomain/index rewrites, response-headers policy
 with CSP) · `api_gateway` (REST API, stage `v1`, TOKEN authorizer, API key — **has its
-own AGENTS.md**, incl. the deployment-trigger trap) · `lambda` (4 Go functions from S3
-artifacts: interactions/contact/admin/authorizer, SSM admin params) · `dynamodb`
+own AGENTS.md**, incl. the deployment-trigger trap) · `lambda` (5 Go functions from S3
+artifacts: interactions/contact/notifications/admin/authorizer, SSM admin params) · `dynamodb`
 (`jyatesdotdev-state`, PK/SK + GSI1, PAY_PER_REQUEST) · `ses` (domain identity + DKIM +
-verified admin email identity) · `cloudwatch_rum` (app monitor, 100% sampling, Cognito
+verified admin identity + `blog`/`projects` contact-list topics) · `cloudwatch_rum` (app monitor, 100% sampling, Cognito
 unauth role) · `rum_budget_guard` (budget kill-switch + reset Lambda — **has its own
 AGENTS.md**).
 
@@ -54,6 +55,12 @@ as string literals — keep in sync if renaming).
 - The CloudFront basic-auth function bakes the base64 password into function code, and
   the API key rides a plaintext `x-api-key` origin header — both are in state by design.
 - The `subdomain_rewrite` function hardcodes `blog.jyates.dev`.
+- Uploads to `s3://jyatesdotdev-static-site/notification-events/*.json` invoke the
+  notifications Lambda. Frontend S3 syncs must continue excluding that prefix. Delivery
+  uses recipient checkpoints in DynamoDB; exhausted async retries land in the encrypted
+  `jyatesdotdev-notification-failures` SQS queue for 14 days.
+- First subscription rollout order is integration → infra → API → frontend. Infra does
+  not apply on push; the API dispatch performs the apply after all five artifacts exist.
 - SPA fallback maps 404→200 `/index.html` (404 only, not 403 — intentional).
 - The API behavior combines `Managed-CachingDisabled` with
   `Managed-AllViewerExceptHostHeader`. The origin policy is designed for API Gateway:
@@ -70,7 +77,7 @@ Uses the AWS CLI (no boto3). Already applied once with tag `rum-30d`.
 ## Commands / CI
 
 - Local: plain `terraform init/plan/apply` — no wrapper scripts, no tfvars file; apply
-  needs many `-var` values (artifact bucket + 4 lambda keys, secrets). In practice,
+  needs many `-var` values (artifact bucket + 5 lambda keys, secrets). In practice,
   **deploys happen via CI, not locally** — prefer `terraform plan` locally and let CI apply.
 - CI `deploy.yml` runs ONLY on `repository_dispatch` (`deploy_api`/`deploy_frontend`,
   sent by the API repo) or manual dispatch — never on push. It runs

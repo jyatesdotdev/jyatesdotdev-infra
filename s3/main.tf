@@ -49,7 +49,6 @@ resource "aws_s3_bucket_public_access_block" "logs" {
 }
 
 resource "aws_s3_bucket" "static_site" {
-  # checkov:skip=CKV2_AWS_62:Static deployment does not have an event-driven consumer.
   # checkov:skip=CKV_AWS_144:Versioning and reproducible deployment provide recovery without replication.
   # checkov:skip=CKV_AWS_145:Public site assets use SSE-S3 to avoid unnecessary KMS cost.
   bucket = var.bucket_name
@@ -97,6 +96,23 @@ resource "aws_s3_bucket_lifecycle_configuration" "static_site" {
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
+    }
+  }
+
+  rule {
+    id     = "expire-notification-manifests"
+    status = "Enabled"
+
+    filter {
+      prefix = "notification-events/"
+    }
+
+    expiration {
+      days = 30
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
     }
   }
 }
@@ -177,6 +193,28 @@ data "aws_iam_policy_document" "static_site" {
   }
 }
 
+resource "aws_lambda_permission" "notifications_from_s3" {
+  statement_id   = "AllowNotificationManifestsFromSiteBucket"
+  action         = "lambda:InvokeFunction"
+  function_name  = var.notifications_lambda_name
+  principal      = "s3.amazonaws.com"
+  source_arn     = aws_s3_bucket.static_site.arn
+  source_account = var.account_id
+}
+
+resource "aws_s3_bucket_notification" "notification_manifests" {
+  bucket = aws_s3_bucket.static_site.id
+
+  lambda_function {
+    lambda_function_arn = var.notifications_lambda_arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "notification-events/"
+    filter_suffix       = ".json"
+  }
+
+  depends_on = [aws_lambda_permission.notifications_from_s3]
+}
+
 variable "bucket_name" {
   description = "The name of the S3 bucket"
   type        = string
@@ -184,6 +222,21 @@ variable "bucket_name" {
 
 variable "cloudfront_distribution_arn" {
   description = "The ARN of the CloudFront distribution"
+  type        = string
+}
+
+variable "notifications_lambda_arn" {
+  description = "ARN of the Lambda that delivers content update notifications"
+  type        = string
+}
+
+variable "notifications_lambda_name" {
+  description = "Name of the Lambda that delivers content update notifications"
+  type        = string
+}
+
+variable "account_id" {
+  description = "AWS account that owns both the site bucket and notification Lambda"
   type        = string
 }
 

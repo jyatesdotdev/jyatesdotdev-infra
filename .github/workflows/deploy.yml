@@ -14,6 +14,9 @@ on:
       contact_lambda_key:
         description: 'S3 key for contact lambda'
         required: true
+      notifications_lambda_key:
+        description: 'S3 key for content notifications lambda'
+        required: true
       admin_lambda_key:
         description: 'S3 key for admin lambda'
         required: true
@@ -35,6 +38,7 @@ jobs:
       TF_VAR_artifact_bucket: ${{ github.event.client_payload.artifact_bucket || github.event.inputs.artifact_bucket }}
       TF_VAR_interactions_lambda_key: ${{ github.event.client_payload.interactions_lambda_key || github.event.inputs.interactions_lambda_key }}
       TF_VAR_contact_lambda_key: ${{ github.event.client_payload.contact_lambda_key || github.event.inputs.contact_lambda_key }}
+      TF_VAR_notifications_lambda_key: ${{ github.event.client_payload.notifications_lambda_key || github.event.inputs.notifications_lambda_key }}
       TF_VAR_admin_lambda_key: ${{ github.event.client_payload.admin_lambda_key || github.event.inputs.admin_lambda_key }}
       TF_VAR_authorizer_lambda_key: ${{ github.event.client_payload.authorizer_lambda_key || github.event.inputs.authorizer_lambda_key }}
       TF_VAR_admin_username: ${{ secrets.ADMIN_USERNAME }}
@@ -67,6 +71,7 @@ jobs:
             TF_VAR_artifact_bucket \
             TF_VAR_interactions_lambda_key \
             TF_VAR_contact_lambda_key \
+            TF_VAR_notifications_lambda_key \
             TF_VAR_admin_lambda_key \
             TF_VAR_authorizer_lambda_key; do
             if [ -z "${!name}" ]; then

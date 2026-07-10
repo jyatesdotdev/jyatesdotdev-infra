@@ -1,7 +1,7 @@
 locals {
-  lambda_functions   = toset(["interactions", "contact", "admin", "authorizer"])
-  dynamodb_functions = toset(["interactions", "contact", "admin"])
-  ses_functions      = toset(["interactions", "contact"])
+  lambda_functions   = toset(["interactions", "contact", "notifications", "admin", "authorizer"])
+  dynamodb_functions = toset(["interactions", "contact", "notifications", "admin"])
+  ses_functions      = toset(["interactions", "contact", "notifications"])
 }
 
 resource "aws_iam_role" "lambda_exec" {
@@ -123,6 +123,92 @@ resource "aws_iam_role_policy_attachment" "ses_access" {
   policy_arn = aws_iam_policy.ses_access.arn
 }
 
+resource "aws_iam_policy" "ses_contact_write_access" {
+  name        = "jyatesdotdev-ses-contact-write-access"
+  description = "Create and update confirmed subscriber preferences"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = [
+        "ses:CreateContact",
+        "ses:GetContact",
+        "ses:UpdateContact",
+      ]
+      Effect   = "Allow"
+      Resource = var.ses_contact_list_arn
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ses_contact_write_access" {
+  role       = aws_iam_role.lambda_exec["contact"].name
+  policy_arn = aws_iam_policy.ses_contact_write_access.arn
+}
+
+resource "aws_iam_policy" "ses_contact_read_access" {
+  name        = "jyatesdotdev-ses-contact-read-access"
+  description = "List explicit topic subscribers for content delivery"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = ["ses:ListContacts"]
+      Effect   = "Allow"
+      Resource = var.ses_contact_list_arn
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ses_contact_read_access" {
+  role       = aws_iam_role.lambda_exec["notifications"].name
+  policy_arn = aws_iam_policy.ses_contact_read_access.arn
+}
+
+resource "aws_iam_policy" "notification_manifest_read" {
+  name        = "jyatesdotdev-notification-manifest-read"
+  description = "Read deploy-created notification manifests from the site bucket"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = ["s3:GetObject"]
+      Effect   = "Allow"
+      Resource = "arn:aws:s3:::${var.site_bucket_name}/notification-events/*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "notification_manifest_read" {
+  role       = aws_iam_role.lambda_exec["notifications"].name
+  policy_arn = aws_iam_policy.notification_manifest_read.arn
+}
+
+resource "aws_sqs_queue" "notification_failures" {
+  name                      = "jyatesdotdev-notification-failures"
+  message_retention_seconds = 1209600
+  kms_master_key_id         = var.kms_key_arn
+}
+
+resource "aws_iam_policy" "notification_failure_queue" {
+  name        = "jyatesdotdev-notification-failure-queue"
+  description = "Send exhausted asynchronous notification invocations to the failure queue"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = ["sqs:SendMessage"]
+      Effect   = "Allow"
+      Resource = aws_sqs_queue.notification_failures.arn
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "notification_failure_queue" {
+  role       = aws_iam_role.lambda_exec["notifications"].name
+  policy_arn = aws_iam_policy.notification_failure_queue.arn
+}
+
 # SSM Parameters retain an operator-visible credential record. The authorizer
 # receives the same values directly and does not need runtime SSM permissions.
 resource "aws_ssm_parameter" "admin_username" {
@@ -152,6 +238,13 @@ resource "aws_cloudwatch_log_group" "interactions" {
 resource "aws_cloudwatch_log_group" "contact" {
   # checkov:skip=CKV_AWS_338:Fourteen-day retention limits stored visitor data and cost.
   name              = "/aws/lambda/jyatesdotdev-contact"
+  retention_in_days = 14
+  kms_key_id        = var.kms_key_arn
+}
+
+resource "aws_cloudwatch_log_group" "notifications" {
+  # checkov:skip=CKV_AWS_338:Fourteen-day retention limits subscriber metadata exposure and cost.
+  name              = "/aws/lambda/jyatesdotdev-notifications"
   retention_in_days = 14
   kms_key_id        = var.kms_key_arn
 }
@@ -230,6 +323,7 @@ resource "aws_lambda_function" "contact" {
     aws_iam_role_policy_attachment.lambda_xray["contact"],
     aws_iam_role_policy_attachment.dynamodb_access["contact"],
     aws_iam_role_policy_attachment.ses_access["contact"],
+    aws_iam_role_policy_attachment.ses_contact_write_access,
   ]
 
   tracing_config {
@@ -238,9 +332,55 @@ resource "aws_lambda_function" "contact" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE_NAME = var.dynamodb_table_name
-      SES_FROM_EMAIL      = var.ses_from_email
-      SES_ADMIN_EMAIL     = var.ses_admin_email
+      DYNAMODB_TABLE_NAME   = var.dynamodb_table_name
+      SES_FROM_EMAIL        = var.ses_from_email
+      SES_ADMIN_EMAIL       = var.ses_admin_email
+      SES_CONTACT_LIST_NAME = var.ses_contact_list_name
+      SITE_URL              = var.site_url
+    }
+  }
+}
+
+# Content Notification Lambda
+resource "aws_lambda_function" "notifications" {
+  # checkov:skip=CKV_AWS_115:Regional quota cannot support per-function reservations.
+  # checkov:skip=CKV_AWS_117:The function has no private VPC dependencies.
+  # checkov:skip=CKV_AWS_173:Environment values are non-secret and encrypted by Lambda at rest.
+  # checkov:skip=CKV_AWS_272:OIDC CI publishes versioned artifacts to a private S3 bucket.
+  function_name = "jyatesdotdev-notifications"
+  role          = aws_iam_role.lambda_exec["notifications"].arn
+  handler       = "bootstrap"
+  runtime       = "provided.al2023"
+  architectures = ["arm64"]
+  s3_bucket     = var.artifact_bucket
+  s3_key        = var.notifications_lambda_key
+  timeout       = 60
+
+  depends_on = [
+    aws_cloudwatch_log_group.notifications,
+    aws_iam_role_policy_attachment.lambda_logs["notifications"],
+    aws_iam_role_policy_attachment.lambda_xray["notifications"],
+    aws_iam_role_policy_attachment.dynamodb_access["notifications"],
+    aws_iam_role_policy_attachment.ses_access["notifications"],
+    aws_iam_role_policy_attachment.ses_contact_read_access,
+    aws_iam_role_policy_attachment.notification_manifest_read,
+    aws_iam_role_policy_attachment.notification_failure_queue,
+  ]
+
+  tracing_config {
+    mode = "Active"
+  }
+
+  dead_letter_config {
+    target_arn = aws_sqs_queue.notification_failures.arn
+  }
+
+  environment {
+    variables = {
+      DYNAMODB_TABLE_NAME   = var.dynamodb_table_name
+      SES_FROM_EMAIL        = var.ses_from_email
+      SES_ADMIN_EMAIL       = var.ses_admin_email
+      SES_CONTACT_LIST_NAME = var.ses_contact_list_name
     }
   }
 }
@@ -321,6 +461,10 @@ variable "dynamodb_table_name" { type = string }
 variable "dynamodb_table_arn" { type = string }
 variable "ses_from_email" { type = string }
 variable "ses_admin_email" { type = string }
+variable "ses_contact_list_name" { type = string }
+variable "ses_contact_list_arn" { type = string }
+variable "site_url" { type = string }
+variable "site_bucket_name" { type = string }
 variable "admin_username" {
   type      = string
   sensitive = true
@@ -332,6 +476,7 @@ variable "admin_password" {
 variable "artifact_bucket" { type = string }
 variable "interactions_lambda_key" { type = string }
 variable "contact_lambda_key" { type = string }
+variable "notifications_lambda_key" { type = string }
 variable "admin_lambda_key" { type = string }
 variable "authorizer_lambda_key" { type = string }
 
@@ -339,5 +484,7 @@ variable "authorizer_lambda_key" { type = string }
 output "interactions_lambda_arn" { value = aws_lambda_function.interactions.arn }
 output "interactions_lambda_name" { value = aws_lambda_function.interactions.function_name }
 output "contact_lambda_arn" { value = aws_lambda_function.contact.arn }
+output "notifications_lambda_arn" { value = aws_lambda_function.notifications.arn }
+output "notifications_lambda_name" { value = aws_lambda_function.notifications.function_name }
 output "admin_lambda_arn" { value = aws_lambda_function.admin.arn }
 output "authorizer_lambda_arn" { value = aws_lambda_function.authorizer.arn }

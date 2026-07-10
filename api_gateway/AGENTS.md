@@ -13,6 +13,8 @@ Routes are hand-declared resource/method/integration triples (no OpenAPI body).
 | `/geo` | GET | interactions | none |
 | `/visits` | GET, POST | interactions | none |
 | `/contact` | POST | contact | none |
+| `/subscriptions` | POST | contact | none |
+| `/subscriptions/confirm` | POST | contact | none |
 | `/admin/comments` | GET | admin | CUSTOM (TOKEN authorizer) |
 | `/admin/comments/{commentId}` | PUT, DELETE | admin | CUSTOM (TOKEN authorizer) |
 

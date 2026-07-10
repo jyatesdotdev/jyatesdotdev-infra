@@ -6,12 +6,13 @@ Terraform IaC for [jyates.dev](https://jyates.dev) — a fully serverless portfo
 
 - **DNS**: Name.com delegates to Route53. Includes iCloud Mail MX/DKIM records and SES subdomain.
 - **CDN**: CloudFront serves the S3 static site (default origin) and routes `/api/*` to API Gateway. A CloudFront Function rewrites directory paths to `index.html` for SPA support and handles `blog.jyates.dev` subdomain rewriting. Only 404 errors trigger the SPA fallback (not 403) — this is intentional so API error responses pass through correctly.
-- **Compute**: API Gateway (REST, stage `v1`) → Lambda (Go, ARM64). Four functions: interactions, contact, admin, authorizer. CloudFront's `origin_path = "/v1"` prepends the stage name, so a request to `/api/v1/likes` arrives at API Gateway as `/v1/api/v1/likes` (stage `v1`, resource `/api/v1/likes`).
-- **Storage**: DynamoDB (on-demand) for likes/comments. S3 for static site and access logs.
-- **Email**: SES sends from `blog@jyates.dev` to `me@jyates.dev` for contact form and comment notifications. Production access requested 2026-04-18; sandbox until approved (only affects sending to unverified addresses).
+- **Compute**: API Gateway (REST, stage `v1`) → Lambda (Go, ARM64), with four HTTP functions: interactions, contact, admin, and authorizer. A fifth notifications function consumes trusted S3 publish manifests. CloudFront's `origin_path = "/v1"` prepends the stage name, so a request to `/api/v1/likes` arrives at API Gateway as `/v1/api/v1/likes` (stage `v1`, resource `/api/v1/likes`).
+- **Storage**: DynamoDB (on-demand) for likes/comments, pending subscription confirmations, and notification deduplication. S3 stores the static site, access logs, and short-lived publish manifests.
+- **Email**: SES sends contact/comment mail and confirmed subscriber updates from `blog@jyates.dev`; an SES v2 contact list stores explicit `blog` and `projects` preferences. Production access requested 2026-04-18; sandbox until approved (only affects sending to unverified addresses).
 - **Security**: API Gateway throttling, application-level write limits, an API key injected by CloudFront, KMS encryption on DynamoDB, and CSP headers via CloudFront.
 - **Auth**: Admin endpoints use Basic Auth via a custom Lambda authorizer. Credentials are supplied directly to the authorizer; SSM parameters retain an operator-visible record.
 - **Observability**: CloudWatch RUM (100% sampling, `aws-rum-web` SDK via Cognito Identity Pool for unauthenticated browser access), CloudWatch Dashboard, CloudFront access logs. RUM captures performance, errors, HTTP, and geographic data (country, subdivision, city).
+- **Notification recovery**: Recipient-level DynamoDB checkpoints make retries resumable; exhausted asynchronous notification invocations go to a KMS-encrypted SQS failure queue retained for 14 days.
 - **Cost Protection**: RUM budget guard — $10/month hard stop via AWS Budgets action that attaches a deny policy to the Cognito role. Auto-resets on the 1st of each month via EventBridge + Lambda.
 - **CI/CD Security**: Checkov IaC scanning with SARIF upload to GitHub Security tab.
 
@@ -35,6 +36,18 @@ This repo does **not** deploy on push. It is triggered by:
 
 A `concurrency` group ensures only one Terraform apply runs at a time. Queued runs wait rather than racing for the state lock.
 
+### First Subscription Rollout
+
+The initial cross-repo rollout must be pushed in this order:
+
+1. `jyatesdotdev-integration` — makes the new cross-repo contract available to deploy gates
+2. `jyatesdotdev-infra` — publishes the Terraform changes without applying them
+3. `jyatesdotdev-api` — uploads all five artifacts and dispatches the infra apply
+4. `jyatesdotdev-frontend` — exposes signup only after the routes and S3 consumer exist
+
+Later changes use the normal per-repository pipelines. Do not push the frontend first:
+notification manifests uploaded before the S3 trigger exists are not replayed automatically.
+
 ## Manual Deployment
 
 When triggering manually via `workflow_dispatch`, you need to provide the Lambda artifact parameters to avoid empty s3_bucket/s3_key errors. Find the latest artifacts:
@@ -54,6 +67,7 @@ gh workflow run deploy.yml --repo jyatesdotdev/jyatesdotdev-infra --ref main \
   -f artifact_bucket="$BUCKET" \
   -f interactions_lambda_key="lambdas/${SHA}/interactions.zip" \
   -f contact_lambda_key="lambdas/${SHA}/contact.zip" \
+  -f notifications_lambda_key="lambdas/${SHA}/notifications.zip" \
   -f admin_lambda_key="lambdas/${SHA}/admin.zip" \
   -f authorizer_lambda_key="lambdas/${SHA}/authorizer.zip"
 ```
@@ -84,6 +98,7 @@ aws s3 ls s3://<artifacts-bucket>/lambdas/ --profile portfolio --region us-west-
 | Bucket | Rule | Retention |
 |---|---|---|
 | Static site | Noncurrent version expiration | 30 days |
+| Notification manifests | Current expiration / noncurrent expiration | 30 days / 7 days |
 | Access logs | Object expiration | 90 days |
 | Artifacts (bootstrap) | Object expiration | 14 days |
 

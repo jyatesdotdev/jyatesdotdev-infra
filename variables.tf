@@ -67,6 +67,11 @@ variable "contact_lambda_key" {
   type        = string
 }
 
+variable "notifications_lambda_key" {
+  description = "S3 key for the content notifications lambda zip"
+  type        = string
+}
+
 variable "admin_lambda_key" {
   description = "S3 key for the admin lambda zip"
   type        = string
