@@ -1,6 +1,10 @@
 resource "aws_api_gateway_rest_api" "api" {
   name        = "jyatesdotdev-api"
   description = "API for jyates.dev"
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
 }
 
 resource "aws_api_gateway_resource" "api_root" {
@@ -352,19 +356,13 @@ resource "aws_api_gateway_deployment" "api" {
 
   rest_api_id = aws_api_gateway_rest_api.api.id
 
-  # A REST API deployment is a snapshot: without a trigger, adding new
-  # resources/methods would never reach the stage.
+  # A REST API deployment is a snapshot. Hashing every module source file
+  # captures in-place method/integration edits as well as newly declared routes.
   triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.geo.id,
-      aws_api_gateway_method.get_geo.id,
-      aws_api_gateway_integration.get_geo.id,
-      aws_api_gateway_resource.visits.id,
-      aws_api_gateway_method.get_visits.id,
-      aws_api_gateway_integration.get_visits.id,
-      aws_api_gateway_method.post_visits.id,
-      aws_api_gateway_integration.post_visits.id,
-    ]))
+    redeployment = sha1(jsonencode({
+      for filename in fileset(path.module, "*.tf") :
+      filename => filesha256("${path.module}/${filename}")
+    }))
   }
 
   lifecycle {
@@ -394,6 +392,9 @@ resource "aws_api_gateway_method_settings" "global" {
   settings {
     throttling_rate_limit  = 20
     throttling_burst_limit = 40
+    metrics_enabled        = true
+    logging_level          = "ERROR"
+    data_trace_enabled     = false
   }
 }
 
@@ -437,7 +438,10 @@ variable "contact_lambda_arn" { type = string }
 variable "admin_lambda_arn" { type = string }
 variable "authorizer_lambda_arn" { type = string }
 variable "kms_key_arn" { type = string }
-variable "api_key" { type = string }
+variable "api_key" {
+  type      = string
+  sensitive = true
+}
 
 resource "aws_api_gateway_api_key" "cloudfront" {
   name  = "cloudfront-origin-key"
@@ -453,11 +457,10 @@ resource "aws_api_gateway_usage_plan" "cloudfront" {
   }
 
   # Compensating control for removing the CloudFront WAF (see RISKS.md). A single
-  # shared key carries all CloudFront-routed API traffic, so these caps are
-  # aggregate. The daily quota is the key add: a hard ceiling on API requests
-  # that bounds Lambda/DynamoDB cost even under a distributed flood (which the
-  # removed per-IP WAF rule never stopped anyway). Tune `limit` — lower = tighter
-  # cost cap but risks 429ing a legitimate traffic spike; higher = more headroom.
+  # shared key carries all CloudFront-routed API traffic, so these limits are
+  # aggregate. API Gateway documents quotas as best effort rather than hard cost
+  # ceilings; Lambda reserved concurrency and application-level write limits are
+  # the deterministic backend controls.
   throttle_settings {
     rate_limit  = 20
     burst_limit = 40

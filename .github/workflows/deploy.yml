@@ -2,24 +2,24 @@ name: Infrastructure Deployment
 
 on:
   repository_dispatch:
-    types: [deploy_api, deploy_frontend]
+    types: [deploy_api]
   workflow_dispatch:
     inputs:
       artifact_bucket:
         description: 'S3 bucket for artifacts'
-        required: false
+        required: true
       interactions_lambda_key:
         description: 'S3 key for interactions lambda'
-        required: false
+        required: true
       contact_lambda_key:
         description: 'S3 key for contact lambda'
-        required: false
+        required: true
       admin_lambda_key:
         description: 'S3 key for admin lambda'
-        required: false
+        required: true
       authorizer_lambda_key:
         description: 'S3 key for authorizer lambda'
-        required: false
+        required: true
 
 jobs:
   terraform:
@@ -30,6 +30,16 @@ jobs:
       cancel-in-progress: false
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      TF_IN_AUTOMATION: true
+      TF_INPUT: false
+      TF_VAR_artifact_bucket: ${{ github.event.client_payload.artifact_bucket || github.event.inputs.artifact_bucket }}
+      TF_VAR_interactions_lambda_key: ${{ github.event.client_payload.interactions_lambda_key || github.event.inputs.interactions_lambda_key }}
+      TF_VAR_contact_lambda_key: ${{ github.event.client_payload.contact_lambda_key || github.event.inputs.contact_lambda_key }}
+      TF_VAR_admin_lambda_key: ${{ github.event.client_payload.admin_lambda_key || github.event.inputs.admin_lambda_key }}
+      TF_VAR_authorizer_lambda_key: ${{ github.event.client_payload.authorizer_lambda_key || github.event.inputs.authorizer_lambda_key }}
+      TF_VAR_admin_username: ${{ secrets.ADMIN_USERNAME }}
+      TF_VAR_namedotcom_username: ${{ secrets.NAMEDOTCOM_USERNAME }}
+      TF_VAR_namedotcom_token: ${{ secrets.NAMEDOTCOM_TOKEN }}
     permissions:
       id-token: write
       contents: read
@@ -49,14 +59,25 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Apply
+      - name: Validate Deployment Inputs
         run: |
-          terraform apply -auto-approve \
-            -var="artifact_bucket=${{ github.event.client_payload.artifact_bucket || github.event.inputs.artifact_bucket }}" \
-            -var="interactions_lambda_key=${{ github.event.client_payload.interactions_lambda_key || github.event.inputs.interactions_lambda_key }}" \
-            -var="contact_lambda_key=${{ github.event.client_payload.contact_lambda_key || github.event.inputs.contact_lambda_key }}" \
-            -var="admin_lambda_key=${{ github.event.client_payload.admin_lambda_key || github.event.inputs.admin_lambda_key }}" \
-            -var="authorizer_lambda_key=${{ github.event.client_payload.authorizer_lambda_key || github.event.inputs.authorizer_lambda_key }}" \
-            -var="admin_username=${{ secrets.ADMIN_USERNAME }}" \
-            -var="namedotcom_username=${{ secrets.NAMEDOTCOM_USERNAME }}" \
-            -var="namedotcom_token=${{ secrets.NAMEDOTCOM_TOKEN }}"
+          for name in \
+            TF_VAR_artifact_bucket \
+            TF_VAR_interactions_lambda_key \
+            TF_VAR_contact_lambda_key \
+            TF_VAR_admin_lambda_key \
+            TF_VAR_authorizer_lambda_key; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is required"
+              exit 1
+            fi
+          done
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+
+      - name: Production Smoke Test
+        run: ./scripts/smoke-prod.sh

@@ -27,21 +27,20 @@ Routes are hand-declared resource/method/integration triples (no OpenAPI body).
 
 ## ⚠️ The deployment-snapshot trap
 
-A REST API deployment is a snapshot; `aws_api_gateway_deployment.api` only
-redeploys when its `triggers.redeployment` hash changes, and that hash currently
-covers **only the geo/visits resources**. Adding or changing any other
-route/method/integration updates Terraform state but **never reaches the stage** —
-add the new resource ids to the `triggers` list (and the integration to
-`depends_on`) or the change silently doesn't ship.
+A REST API deployment is a snapshot. `aws_api_gateway_deployment.api` hashes all
+Terraform files in this module, so any declared route/method/integration change
+forces a new snapshot. New integrations must still be added to the deployment's
+explicit `depends_on` list so Terraform cannot snapshot the API before creating
+them.
 
 ## Cost limits (deliberate — don't "fix"; see RISKS.md)
 
 - Stage-wide `method_settings` throttle: 20 rps / 40 burst.
 - Usage plan `cloudfront-origin-plan` (key `cloudfront-origin-key`): same 20/40
-  throttle plus a **100000 req/DAY quota**. One shared key carries all
-  CloudFront-routed traffic, so both are aggregate caps; the daily quota is the
-  hard cost ceiling that replaced the removed WAF (compensating control —
-  trade-offs in the inline comment and RISKS.md).
+throttle plus a **100000 req/DAY quota**. One shared key carries all
+CloudFront-routed traffic, so both are aggregate controls. API Gateway quotas are
+best effort, not hard cost ceilings; deterministic backend protection comes from
+reserved Lambda concurrency and application-level write limits (see RISKS.md).
 
 ## Misc
 

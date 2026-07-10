@@ -21,8 +21,9 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
 
   rule {
     apply_server_side_encryption_by_default {
-      kms_master_key_id = var.kms_key_arn
-      sse_algorithm     = "aws:kms"
+      # S3 server access logging supports destination buckets encrypted with
+      # SSE-S3, but not customer-managed KMS keys.
+      sse_algorithm = "AES256"
     }
   }
 }
@@ -99,6 +100,14 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
     expiration {
       days = 90
     }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 
@@ -164,11 +173,6 @@ variable "bucket_name" {
 
 variable "cloudfront_distribution_arn" {
   description = "The ARN of the CloudFront distribution"
-  type        = string
-}
-
-variable "kms_key_arn" {
-  description = "The ARN of the KMS key"
   type        = string
 }
 

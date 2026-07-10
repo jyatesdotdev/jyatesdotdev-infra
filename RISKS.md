@@ -29,24 +29,30 @@ Its only real value was throttling a single hot IP.
 - **API Gateway usage-plan throttle + daily quota** (`api_gateway/main.tf`):
   `throttle_settings` 20 rps / 40 burst and `quota_settings` 100,000 req/DAY.
   All CloudFront-routed API traffic shares one key, so these are aggregate caps.
-  The **daily quota is the meaningful add** — a hard ceiling on API requests that
-  bounds Lambda/DynamoDB cost regardless of how many source IPs an attacker uses.
+  AWS documents usage-plan throttles and quotas as best-effort targets, not hard
+  request or cost ceilings. They materially reduce sustained load but can be
+  exceeded briefly.
+- **Reserved Lambda concurrency**: interactions 10, contact 2, admin 2, and
+  authorizer 5. These are hard concurrent-execution bounds for backend compute;
+  they do not cap billable CloudFront/API Gateway requests.
 - Pre-existing and unchanged: stage throttle (20/40 aggregate), app-level per-IP
-  DynamoDB limits (100 likes/day, 20 visits/day), AWS Shield Standard (free,
-  L3/L4 only), CloudFront edge caching of static assets, `x-api-key` required on
-  the origin, and the $10/month AWS Budgets alarm.
+  DynamoDB limits (100 like additions, 20 visits, 10 comments, and 5 contact
+  submissions per day), AWS Shield Standard (free, L3/L4 only), CloudFront edge
+  caching of static assets, `x-api-key` required on the origin, and the $10/month
+  AWS Budgets alarm.
 
 ### Accepted residual risks
 
 1. **No per-IP edge rate limit anymore.** A single abusive IP can hit the edge
-   and API harder than before (previously capped to ~1.67 rps). Backend compute
-   is still bounded by the aggregate stage throttle and the daily quota; static
-   content is edge-cached and cheap. Impact: low for a personal site.
+   and API harder than before (previously capped to ~1.67 rps). Reserved
+   concurrency bounds simultaneous backend work, while throttles and quotas
+   reduce sustained invocation volume. Static content is edge-cached and cheap.
+   Impact: low for a personal site.
 
 2. **Distributed L7 flood is not fully prevented — and never was.** The removed
-   per-IP WAF rule did nothing against a distributed bot. Backend compute is
-   bounded (throttle + quota), but CloudFront and API Gateway **request charges**
-   scale with the attacker's send rate (throttled 429s are still billable). The
+   per-IP WAF rule did nothing against a distributed bot. Lambda concurrency is
+   bounded, but CloudFront and API Gateway **request charges** scale with the
+   attacker's send rate (throttled 429s are still billable). The
    only backstop is the $10 budget alarm, which is **notification-only and lags
    by hours** — it cannot stop spend. This tail risk is unchanged by removing the
    WAF. Genuine distributed-bot defense (WAF Bot Control, CAPTCHA/Challenge, or a
@@ -61,11 +67,12 @@ Its only real value was throttling a single hot IP.
    exposed to browsers — so this is defense-in-depth, not an open door. If the
    key ever leaks, rotate `random_password.api_key`.
 
-4. **Quota self-DoS trade-off.** Once the 100,000/day quota is exhausted, API
-   Gateway returns 429 to everyone until the window resets — so a genuine viral
-   spike could 429 legitimate users. The limit is set generously (~100–500× a
-   normal day) to make this unlikely; tune it in `api_gateway/main.tf` if traffic
-   grows. Lower = tighter cost cap; higher = more headroom, higher worst case.
+4. **Quota self-DoS trade-off.** Once API Gateway observes the 100,000/day quota
+   as exhausted, it returns 429 to everyone until the window resets, though some
+   requests can exceed the configured quota because enforcement is best effort.
+   A genuine viral spike could still 429 legitimate users. The limit is set
+   generously (~100–500x a normal day) to make this unlikely; tune it in
+   `api_gateway/main.tf` if traffic grows.
 
 ### If attacked (runbook)
 

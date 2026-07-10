@@ -151,6 +151,7 @@ resource "aws_cloudfront_cache_policy" "api_with_geo_headers" {
           "CloudFront-Viewer-Time-Zone",
           "CloudFront-Viewer-Latitude",
           "CloudFront-Viewer-Longitude",
+          "CloudFront-Viewer-Address",
         ]
       }
     }
@@ -276,9 +277,18 @@ variable "s3_bucket_domain_name" { type = string }
 variable "s3_logging_bucket_domain_name" { type = string }
 variable "api_gateway_domain_name" { type = string }
 variable "acm_certificate_arn" { type = string }
-variable "basic_auth_user" { type = string }
-variable "basic_auth_password" { type = string }
-variable "api_key" { type = string }
+variable "basic_auth_user" {
+  type      = string
+  sensitive = true
+}
+variable "basic_auth_password" {
+  type      = string
+  sensitive = true
+}
+variable "api_key" {
+  type      = string
+  sensitive = true
+}
 
 output "distribution_id" { value = aws_cloudfront_distribution.dist.id }
 output "distribution_arn" { value = aws_cloudfront_distribution.dist.arn }

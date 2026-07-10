@@ -24,7 +24,7 @@ private bootstrap repo — not here.
    either half.
 5. Deliberately tiny limits for cost control — don't "fix" them: API Gateway throttle
    20 rps / 40 burst; the `cloudfront-origin-plan` usage plan quota **100000 req/DAY**
-   (compensating control after WAF removal — see RISKS.md);
+   (best-effort compensating control after WAF removal — see RISKS.md);
    account-wide $10/mo budget in `budgets.tf` (separate from the RUM budget).
 6. SES is in **sandbox** — only verified identities receive mail.
 

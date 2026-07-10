@@ -30,9 +30,9 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/Lambda", "Invocations", { stat = "Sum", color = "#2ca02c" }],
-            [".", "Errors", { stat = "Sum", color = "#d62728" }],
-            [".", "Throttles", { stat = "Sum", color = "#ff7f0e" }]
+            [{ expression = "SUM(SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Invocations\"', 'Sum', 300))", id = "invocations", label = "Invocations", color = "#2ca02c" }],
+            [{ expression = "SUM(SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Errors\"', 'Sum', 300))", id = "errors", label = "Errors", color = "#d62728" }],
+            [{ expression = "SUM(SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Throttles\"', 'Sum', 300))", id = "throttles", label = "Throttles", color = "#ff7f0e" }]
           ]
           view    = "timeSeries"
           stacked = false

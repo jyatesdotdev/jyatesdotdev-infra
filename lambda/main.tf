@@ -1,5 +1,13 @@
+locals {
+  lambda_functions   = toset(["interactions", "contact", "admin", "authorizer"])
+  dynamodb_functions = toset(["interactions", "contact", "admin"])
+  ses_functions      = toset(["interactions", "contact"])
+}
+
 resource "aws_iam_role" "lambda_exec" {
-  name = "jyatesdotdev-lambda-exec"
+  for_each = local.lambda_functions
+
+  name = "jyatesdotdev-${each.key}-exec"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -15,8 +23,17 @@ resource "aws_iam_role" "lambda_exec" {
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
-  role       = aws_iam_role.lambda_exec.name
+  for_each = local.lambda_functions
+
+  role       = aws_iam_role.lambda_exec[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_xray" {
+  for_each = local.lambda_functions
+
+  role       = aws_iam_role.lambda_exec[each.key].name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 # DynamoDB Access
@@ -33,27 +50,19 @@ resource "aws_iam_policy" "dynamodb_access" {
           "dynamodb:PutItem",
           "dynamodb:UpdateItem",
           "dynamodb:DeleteItem",
-          "dynamodb:Query",
-          "dynamodb:Scan"
+          "dynamodb:Query"
         ]
         Effect   = "Allow"
         Resource = [var.dynamodb_table_arn, "${var.dynamodb_table_arn}/index/GSI1"]
-      },
-      {
-        Action = [
-          "kms:Decrypt",
-          "kms:Encrypt",
-          "kms:GenerateDataKey"
-        ]
-        Effect   = "Allow"
-        Resource = [var.kms_key_arn]
       }
     ]
   })
 }
 
 resource "aws_iam_role_policy_attachment" "dynamodb_access" {
-  role       = aws_iam_role.lambda_exec.name
+  for_each = local.dynamodb_functions
+
+  role       = aws_iam_role.lambda_exec[each.key].name
   policy_arn = aws_iam_policy.dynamodb_access.arn
 }
 
@@ -78,33 +87,14 @@ resource "aws_iam_policy" "ses_access" {
 }
 
 resource "aws_iam_role_policy_attachment" "ses_access" {
-  role       = aws_iam_role.lambda_exec.name
+  for_each = local.ses_functions
+
+  role       = aws_iam_role.lambda_exec[each.key].name
   policy_arn = aws_iam_policy.ses_access.arn
 }
 
-# SSM Access for Authorizer Secrets
-resource "aws_iam_policy" "ssm_access" {
-  name        = "jyatesdotdev-ssm-access"
-  description = "IAM policy for SSM access"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = [
-        "ssm:GetParameter"
-      ]
-      Effect   = "Allow"
-      Resource = "arn:aws:ssm:${var.aws_region}:${var.account_id}:parameter/jyatesdotdev/*"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ssm_access" {
-  role       = aws_iam_role.lambda_exec.name
-  policy_arn = aws_iam_policy.ssm_access.arn
-}
-
-# SSM Parameters for Admin Credentials
+# SSM Parameters retain an operator-visible credential record. The authorizer
+# receives the same values directly and does not need runtime SSM permissions.
 resource "aws_ssm_parameter" "admin_username" {
   name  = "/jyatesdotdev/admin/username"
   type  = "String"
@@ -147,14 +137,23 @@ resource "aws_cloudwatch_log_group" "authorizer" {
 # Interactions Lambda
 resource "aws_lambda_function" "interactions" {
   function_name = "jyatesdotdev-interactions"
-  role          = aws_iam_role.lambda_exec.arn
+  role          = aws_iam_role.lambda_exec["interactions"].arn
   handler       = "bootstrap"
   runtime       = "provided.al2023"
   architectures = ["arm64"]
   s3_bucket     = var.artifact_bucket
   s3_key        = var.interactions_lambda_key
+  timeout       = 10
 
-  depends_on = [aws_cloudwatch_log_group.interactions]
+  reserved_concurrent_executions = 10
+
+  depends_on = [
+    aws_cloudwatch_log_group.interactions,
+    aws_iam_role_policy_attachment.lambda_logs["interactions"],
+    aws_iam_role_policy_attachment.lambda_xray["interactions"],
+    aws_iam_role_policy_attachment.dynamodb_access["interactions"],
+    aws_iam_role_policy_attachment.ses_access["interactions"],
+  ]
 
   tracing_config {
     mode = "Active"
@@ -173,14 +172,23 @@ resource "aws_lambda_function" "interactions" {
 # Contact Lambda
 resource "aws_lambda_function" "contact" {
   function_name = "jyatesdotdev-contact"
-  role          = aws_iam_role.lambda_exec.arn
+  role          = aws_iam_role.lambda_exec["contact"].arn
   handler       = "bootstrap"
   runtime       = "provided.al2023"
   architectures = ["arm64"]
   s3_bucket     = var.artifact_bucket
   s3_key        = var.contact_lambda_key
+  timeout       = 10
 
-  depends_on = [aws_cloudwatch_log_group.contact]
+  reserved_concurrent_executions = 2
+
+  depends_on = [
+    aws_cloudwatch_log_group.contact,
+    aws_iam_role_policy_attachment.lambda_logs["contact"],
+    aws_iam_role_policy_attachment.lambda_xray["contact"],
+    aws_iam_role_policy_attachment.dynamodb_access["contact"],
+    aws_iam_role_policy_attachment.ses_access["contact"],
+  ]
 
   tracing_config {
     mode = "Active"
@@ -188,8 +196,9 @@ resource "aws_lambda_function" "contact" {
 
   environment {
     variables = {
-      SES_FROM_EMAIL  = var.ses_from_email
-      SES_ADMIN_EMAIL = var.ses_admin_email
+      DYNAMODB_TABLE_NAME = var.dynamodb_table_name
+      SES_FROM_EMAIL      = var.ses_from_email
+      SES_ADMIN_EMAIL     = var.ses_admin_email
     }
   }
 }
@@ -197,14 +206,22 @@ resource "aws_lambda_function" "contact" {
 # Admin Lambda
 resource "aws_lambda_function" "admin" {
   function_name = "jyatesdotdev-admin"
-  role          = aws_iam_role.lambda_exec.arn
+  role          = aws_iam_role.lambda_exec["admin"].arn
   handler       = "bootstrap"
   runtime       = "provided.al2023"
   architectures = ["arm64"]
   s3_bucket     = var.artifact_bucket
   s3_key        = var.admin_lambda_key
+  timeout       = 5
 
-  depends_on = [aws_cloudwatch_log_group.admin]
+  reserved_concurrent_executions = 2
+
+  depends_on = [
+    aws_cloudwatch_log_group.admin,
+    aws_iam_role_policy_attachment.lambda_logs["admin"],
+    aws_iam_role_policy_attachment.lambda_xray["admin"],
+    aws_iam_role_policy_attachment.dynamodb_access["admin"],
+  ]
 
   tracing_config {
     mode = "Active"
@@ -220,14 +237,21 @@ resource "aws_lambda_function" "admin" {
 # Authorizer Lambda
 resource "aws_lambda_function" "authorizer" {
   function_name = "jyatesdotdev-authorizer"
-  role          = aws_iam_role.lambda_exec.arn
+  role          = aws_iam_role.lambda_exec["authorizer"].arn
   handler       = "bootstrap"
   runtime       = "provided.al2023"
   architectures = ["arm64"]
   s3_bucket     = var.artifact_bucket
   s3_key        = var.authorizer_lambda_key
+  timeout       = 3
 
-  depends_on = [aws_cloudwatch_log_group.authorizer]
+  reserved_concurrent_executions = 5
+
+  depends_on = [
+    aws_cloudwatch_log_group.authorizer,
+    aws_iam_role_policy_attachment.lambda_logs["authorizer"],
+    aws_iam_role_policy_attachment.lambda_xray["authorizer"],
+  ]
 
   tracing_config {
     mode = "Active"
@@ -235,24 +259,27 @@ resource "aws_lambda_function" "authorizer" {
 
   environment {
     variables = {
-      ADMIN_USERNAME       = var.admin_username
-      ADMIN_PASSWORD       = var.admin_password
-      ADMIN_USERNAME_PARAM = aws_ssm_parameter.admin_username.name
-      ADMIN_PASSWORD_PARAM = aws_ssm_parameter.admin_password.name
+      ADMIN_USERNAME = var.admin_username
+      ADMIN_PASSWORD = var.admin_password
     }
   }
 }
 
 variable "aws_region" { type = string }
 variable "account_id" { type = string }
-variable "domain_name" { type = string }
 variable "kms_key_arn" { type = string }
 variable "dynamodb_table_name" { type = string }
 variable "dynamodb_table_arn" { type = string }
 variable "ses_from_email" { type = string }
 variable "ses_admin_email" { type = string }
-variable "admin_username" { type = string }
-variable "admin_password" { type = string }
+variable "admin_username" {
+  type      = string
+  sensitive = true
+}
+variable "admin_password" {
+  type      = string
+  sensitive = true
+}
 variable "artifact_bucket" { type = string }
 variable "interactions_lambda_key" { type = string }
 variable "contact_lambda_key" { type = string }

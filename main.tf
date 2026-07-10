@@ -60,7 +60,6 @@ module "s3" {
   source                      = "./s3"
   bucket_name                 = "jyatesdotdev-static-site"
   cloudfront_distribution_arn = module.cloudfront.distribution_arn
-  kms_key_arn                 = aws_kms_key.main.arn
 }
 
 module "dynamodb" {
@@ -72,7 +71,6 @@ module "lambda" {
   source                  = "./lambda"
   aws_region              = var.aws_region
   account_id              = data.aws_caller_identity.current.account_id
-  domain_name             = var.domain_name
   kms_key_arn             = aws_kms_key.main.arn
   dynamodb_table_name     = module.dynamodb.table_name
   dynamodb_table_arn      = module.dynamodb.table_arn
