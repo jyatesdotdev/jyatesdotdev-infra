@@ -117,6 +117,11 @@ data "archive_file" "reset" {
 }
 
 resource "aws_lambda_function" "reset" {
+  # checkov:skip=CKV_AWS_115:Regional quota cannot support per-function reservations.
+  # checkov:skip=CKV_AWS_116:A reset failure leaves telemetry disabled and is safe to retry.
+  # checkov:skip=CKV_AWS_117:The function only calls the public IAM API.
+  # checkov:skip=CKV_AWS_272:Terraform packages the reviewed inline source directly.
+  # checkov:skip=CKV_AWS_50:One monthly invocation is observable through CloudWatch logs.
   function_name    = "jyatesdotdev-rum-budget-reset"
   filename         = data.archive_file.reset.output_path
   source_code_hash = data.archive_file.reset.output_base64sha256

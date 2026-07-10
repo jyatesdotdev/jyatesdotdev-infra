@@ -122,6 +122,10 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
 }
 
 resource "aws_cloudfront_distribution" "dist" {
+  # checkov:skip=CKV_AWS_68:WAF cost decision and compensating controls are documented in RISKS.md.
+  # checkov:skip=CKV2_AWS_47:The Go and static origins do not run Log4j; no WAF is attached.
+  # checkov:skip=CKV_AWS_310:A second regional origin is not justified for this personal site.
+  # checkov:skip=CKV_AWS_374:The public site is intentionally available without geo restrictions.
   enabled             = true
   is_ipv6_enabled     = true
   price_class         = "PriceClass_100" # Only use North America and Europe edge locations (cheapest)

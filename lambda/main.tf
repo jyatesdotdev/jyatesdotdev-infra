@@ -36,6 +36,25 @@ resource "aws_iam_role_policy_attachment" "lambda_xray" {
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
+resource "aws_iam_policy" "authorizer_env_kms" {
+  name        = "jyatesdotdev-authorizer-env-kms"
+  description = "Decrypt the customer-managed Lambda environment for the authorizer"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = "kms:Decrypt"
+      Effect   = "Allow"
+      Resource = var.kms_key_arn
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "authorizer_env_kms" {
+  role       = aws_iam_role.lambda_exec["authorizer"].name
+  policy_arn = aws_iam_policy.authorizer_env_kms.arn
+}
+
 # DynamoDB Access
 resource "aws_iam_policy" "dynamodb_access" {
   name        = "jyatesdotdev-dynamodb-access"
@@ -107,39 +126,45 @@ resource "aws_iam_role_policy_attachment" "ses_access" {
 # SSM Parameters retain an operator-visible credential record. The authorizer
 # receives the same values directly and does not need runtime SSM permissions.
 resource "aws_ssm_parameter" "admin_username" {
+  # checkov:skip=CKV2_AWS_34:The username is an identifier, not a secret.
   name  = "/jyatesdotdev/admin/username"
   type  = "String"
   value = var.admin_username
 }
 
 resource "aws_ssm_parameter" "admin_password" {
-  name  = "/jyatesdotdev/admin/password"
-  type  = "SecureString"
-  value = var.admin_password
+  name   = "/jyatesdotdev/admin/password"
+  type   = "SecureString"
+  value  = var.admin_password
+  key_id = var.kms_key_arn
 }
 
 # Lambda Packaging removed (handled by API repository and uploaded to S3)
 
 # CloudWatch Log Groups
 resource "aws_cloudwatch_log_group" "interactions" {
+  # checkov:skip=CKV_AWS_338:Fourteen-day retention limits stored visitor data and cost.
   name              = "/aws/lambda/jyatesdotdev-interactions"
   retention_in_days = 14
   kms_key_id        = var.kms_key_arn
 }
 
 resource "aws_cloudwatch_log_group" "contact" {
+  # checkov:skip=CKV_AWS_338:Fourteen-day retention limits stored visitor data and cost.
   name              = "/aws/lambda/jyatesdotdev-contact"
   retention_in_days = 14
   kms_key_id        = var.kms_key_arn
 }
 
 resource "aws_cloudwatch_log_group" "admin" {
+  # checkov:skip=CKV_AWS_338:Fourteen-day retention limits stored visitor data and cost.
   name              = "/aws/lambda/jyatesdotdev-admin"
   retention_in_days = 14
   kms_key_id        = var.kms_key_arn
 }
 
 resource "aws_cloudwatch_log_group" "authorizer" {
+  # checkov:skip=CKV_AWS_338:Fourteen-day retention limits stored visitor data and cost.
   name              = "/aws/lambda/jyatesdotdev-authorizer"
   retention_in_days = 14
   kms_key_id        = var.kms_key_arn
@@ -147,6 +172,11 @@ resource "aws_cloudwatch_log_group" "authorizer" {
 
 # Interactions Lambda
 resource "aws_lambda_function" "interactions" {
+  # checkov:skip=CKV_AWS_115:Regional quota cannot support per-function reservations.
+  # checkov:skip=CKV_AWS_116:API Gateway invokes this function synchronously.
+  # checkov:skip=CKV_AWS_117:The function has no private VPC dependencies.
+  # checkov:skip=CKV_AWS_173:Environment values are non-secret and encrypted by Lambda at rest.
+  # checkov:skip=CKV_AWS_272:OIDC CI publishes versioned artifacts to a private S3 bucket.
   function_name = "jyatesdotdev-interactions"
   role          = aws_iam_role.lambda_exec["interactions"].arn
   handler       = "bootstrap"
@@ -180,6 +210,11 @@ resource "aws_lambda_function" "interactions" {
 
 # Contact Lambda
 resource "aws_lambda_function" "contact" {
+  # checkov:skip=CKV_AWS_115:Regional quota cannot support per-function reservations.
+  # checkov:skip=CKV_AWS_116:API Gateway invokes this function synchronously.
+  # checkov:skip=CKV_AWS_117:The function has no private VPC dependencies.
+  # checkov:skip=CKV_AWS_173:Environment values are non-secret and encrypted by Lambda at rest.
+  # checkov:skip=CKV_AWS_272:OIDC CI publishes versioned artifacts to a private S3 bucket.
   function_name = "jyatesdotdev-contact"
   role          = aws_iam_role.lambda_exec["contact"].arn
   handler       = "bootstrap"
@@ -212,6 +247,11 @@ resource "aws_lambda_function" "contact" {
 
 # Admin Lambda
 resource "aws_lambda_function" "admin" {
+  # checkov:skip=CKV_AWS_115:Regional quota cannot support per-function reservations.
+  # checkov:skip=CKV_AWS_116:API Gateway invokes this function synchronously.
+  # checkov:skip=CKV_AWS_117:The function has no private VPC dependencies.
+  # checkov:skip=CKV_AWS_173:Environment values are non-secret and encrypted by Lambda at rest.
+  # checkov:skip=CKV_AWS_272:OIDC CI publishes versioned artifacts to a private S3 bucket.
   function_name = "jyatesdotdev-admin"
   role          = aws_iam_role.lambda_exec["admin"].arn
   handler       = "bootstrap"
@@ -241,6 +281,10 @@ resource "aws_lambda_function" "admin" {
 
 # Authorizer Lambda
 resource "aws_lambda_function" "authorizer" {
+  # checkov:skip=CKV_AWS_115:Regional quota cannot support per-function reservations.
+  # checkov:skip=CKV_AWS_116:API Gateway invokes this function synchronously.
+  # checkov:skip=CKV_AWS_117:The function has no private VPC dependencies.
+  # checkov:skip=CKV_AWS_272:OIDC CI publishes versioned artifacts to a private S3 bucket.
   function_name = "jyatesdotdev-authorizer"
   role          = aws_iam_role.lambda_exec["authorizer"].arn
   handler       = "bootstrap"
@@ -249,11 +293,13 @@ resource "aws_lambda_function" "authorizer" {
   s3_bucket     = var.artifact_bucket
   s3_key        = var.authorizer_lambda_key
   timeout       = 3
+  kms_key_arn   = var.kms_key_arn
 
   depends_on = [
     aws_cloudwatch_log_group.authorizer,
     aws_iam_role_policy_attachment.lambda_logs["authorizer"],
     aws_iam_role_policy_attachment.lambda_xray["authorizer"],
+    aws_iam_role_policy_attachment.authorizer_env_kms,
   ]
 
   tracing_config {

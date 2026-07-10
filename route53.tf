@@ -1,5 +1,7 @@
 # Create the hosted zone (Terraform-managed, not imported)
 resource "aws_route53_zone" "main" {
+  # checkov:skip=CKV2_AWS_38:DNSSEC requires coordinated DS delegation at Name.com and is deferred to avoid a DNS outage.
+  # checkov:skip=CKV2_AWS_39:Query logging cost and retained visitor metadata are not justified for this site.
   name = var.domain_name
 }
 

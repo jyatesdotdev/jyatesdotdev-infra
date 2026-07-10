@@ -1,4 +1,5 @@
 resource "aws_cognito_identity_pool" "rum" {
+  # checkov:skip=CKV_AWS_366:Browser RUM requires guest identities; the role can only submit this monitor's events.
   identity_pool_name               = "jyatesdotdev-rum"
   allow_unauthenticated_identities = true
   allow_classic_flow               = true

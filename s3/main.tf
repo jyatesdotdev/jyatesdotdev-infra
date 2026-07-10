@@ -1,8 +1,12 @@
 resource "aws_s3_bucket" "logs" {
+  # checkov:skip=CKV2_AWS_62:Log delivery has no event-driven consumer.
+  # checkov:skip=CKV_AWS_144:Cross-region replication is not justified for disposable logs.
+  # checkov:skip=CKV_AWS_145:SSE-S3 is required for the combined S3 and legacy CloudFront log target.
   bucket = "${var.bucket_name}-logs"
 }
 
 resource "aws_s3_bucket_ownership_controls" "logs" {
+  # checkov:skip=CKV2_AWS_65:Legacy CloudFront standard logging requires bucket ACLs.
   bucket = aws_s3_bucket.logs.id
 
   rule {
@@ -38,13 +42,16 @@ resource "aws_s3_bucket_versioning" "logs" {
 resource "aws_s3_bucket_public_access_block" "logs" {
   bucket = aws_s3_bucket.logs.id
 
-  block_public_acls       = false
+  block_public_acls       = true
   block_public_policy     = true
-  ignore_public_acls      = false
+  ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket" "static_site" {
+  # checkov:skip=CKV2_AWS_62:Static deployment does not have an event-driven consumer.
+  # checkov:skip=CKV_AWS_144:Versioning and reproducible deployment provide recovery without replication.
+  # checkov:skip=CKV_AWS_145:Public site assets use SSE-S3 to avoid unnecessary KMS cost.
   bucket = var.bucket_name
 }
 
@@ -86,6 +93,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "static_site" {
 
     noncurrent_version_expiration {
       noncurrent_days = 30
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
     }
   }
 }

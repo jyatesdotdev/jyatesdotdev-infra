@@ -2,6 +2,10 @@ resource "aws_api_gateway_rest_api" "api" {
   name        = "jyatesdotdev-api"
   description = "API for jyates.dev"
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   endpoint_configuration {
     types = ["REGIONAL"]
   }
@@ -37,6 +41,7 @@ resource "aws_api_gateway_resource" "comments" {
 
 # GET /comments
 resource "aws_api_gateway_method" "get_comments" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.comments.id
   http_method      = "GET"
@@ -55,6 +60,7 @@ resource "aws_api_gateway_integration" "get_comments" {
 
 # POST /comments
 resource "aws_api_gateway_method" "post_comments" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.comments.id
   http_method      = "POST"
@@ -85,6 +91,7 @@ resource "aws_api_gateway_resource" "comment_like" {
 }
 
 resource "aws_api_gateway_method" "post_comment_like" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.comment_like.id
   http_method      = "POST"
@@ -109,6 +116,7 @@ resource "aws_api_gateway_resource" "likes" {
 }
 
 resource "aws_api_gateway_method" "get_likes" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.likes.id
   http_method      = "GET"
@@ -126,6 +134,7 @@ resource "aws_api_gateway_integration" "get_likes" {
 }
 
 resource "aws_api_gateway_method" "post_likes" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.likes.id
   http_method      = "POST"
@@ -150,6 +159,7 @@ resource "aws_api_gateway_resource" "geo" {
 }
 
 resource "aws_api_gateway_method" "get_geo" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.geo.id
   http_method      = "GET"
@@ -173,6 +183,7 @@ resource "aws_api_gateway_resource" "visits" {
 }
 
 resource "aws_api_gateway_method" "get_visits" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.visits.id
   http_method      = "GET"
@@ -190,6 +201,7 @@ resource "aws_api_gateway_integration" "get_visits" {
 }
 
 resource "aws_api_gateway_method" "post_visits" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.visits.id
   http_method      = "POST"
@@ -214,6 +226,7 @@ resource "aws_api_gateway_resource" "contact" {
 }
 
 resource "aws_api_gateway_method" "post_contact" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.contact.id
   http_method      = "POST"
@@ -245,6 +258,7 @@ resource "aws_api_gateway_resource" "admin_comments" {
 
 # GET /admin/comments
 resource "aws_api_gateway_method" "get_admin_comments" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.admin_comments.id
   http_method      = "GET"
@@ -270,6 +284,7 @@ resource "aws_api_gateway_resource" "admin_comment_id" {
 }
 
 resource "aws_api_gateway_method" "put_admin_comment" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.admin_comment_id.id
   http_method      = "PUT"
@@ -289,6 +304,7 @@ resource "aws_api_gateway_integration" "put_admin_comment" {
 
 # DELETE /admin/comments/{commentId}
 resource "aws_api_gateway_method" "delete_admin_comment" {
+  # checkov:skip=CKV2_AWS_53:Lambda proxy handlers enforce route-specific validation.
   rest_api_id      = aws_api_gateway_rest_api.api.id
   resource_id      = aws_api_gateway_resource.admin_comment_id.id
   http_method      = "DELETE"
@@ -332,6 +348,7 @@ resource "aws_api_gateway_account" "api" {
 }
 
 resource "aws_cloudwatch_log_group" "api_gw" {
+  # checkov:skip=CKV_AWS_338:Seven-day retention limits stored visitor data and cost.
   name              = "/aws/api-gateway/jyatesdotdev-api"
   retention_in_days = 7
   kms_key_id        = var.kms_key_arn
@@ -371,6 +388,9 @@ resource "aws_api_gateway_deployment" "api" {
 }
 
 resource "aws_api_gateway_stage" "v1" {
+  # checkov:skip=CKV2_AWS_29:WAF removal and compensating controls are documented in RISKS.md.
+  # checkov:skip=CKV2_AWS_51:Client certificates do not apply to Lambda proxy integrations.
+  # checkov:skip=CKV_AWS_120:Dynamic and visitor-specific API responses must not be cached.
   deployment_id = aws_api_gateway_deployment.api.id
   rest_api_id   = aws_api_gateway_rest_api.api.id
   stage_name    = "v1"
@@ -385,6 +405,7 @@ resource "aws_api_gateway_stage" "v1" {
 
 # Apply global rate limit to entire API
 resource "aws_api_gateway_method_settings" "global" {
+  # checkov:skip=CKV_AWS_225:Dynamic and visitor-specific API responses must not be cached.
   rest_api_id = aws_api_gateway_rest_api.api.id
   stage_name  = aws_api_gateway_stage.v1.stage_name
   method_path = "*/*"

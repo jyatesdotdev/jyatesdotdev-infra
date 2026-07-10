@@ -95,3 +95,27 @@ Its only real value was throttling a single hot IP.
 ### Cost impact
 
 Total bill ~$7.55/mo → ~$1.53/mo (saves ~$6.02/mo, ~$72/yr).
+
+## 2026-07-09 - Calibrated Checkov policy exceptions
+
+Checkov is a hard CI gate. Accepted exceptions are annotated on individual
+Terraform resources so new resources do not inherit blanket exclusions. The
+current exceptions reflect these architecture and cost decisions:
+
+- API Gateway uses Lambda proxy integrations. Go handlers own schema, path, and
+  query validation; API responses are dynamic or visitor-specific and stay
+  uncached. API Gateway client certificates do not apply to Lambda integrations.
+- API Lambdas are invoked synchronously, have no private VPC dependencies, and
+  cannot reserve concurrency under the account's current regional quota. AWS
+  Signer is not used; OIDC CI publishes versioned artifacts to a private bucket.
+- CloudWatch log retention is deliberately 7-14 days to limit both cost and
+  retained visitor data. Public site assets use SSE-S3. The shared logging bucket
+  also uses SSE-S3 because it receives S3 server logs and legacy CloudFront logs.
+- S3 replication and event notifications have no consumer or recovery requirement
+  here. Bucket versioning and reproducible deployments cover static-site recovery.
+- The site is global, has a single origin per behavior, and uses unauthenticated
+  Cognito identities solely so browsers can submit events to the scoped RUM role.
+- DNSSEC is deferred because enabling it requires coordinated DS delegation at
+  Name.com; an incomplete rollout would take the site and email DNS offline. DNS
+  query logging is not retained because its cost and visitor metadata are not
+  justified for the current incident-response needs.

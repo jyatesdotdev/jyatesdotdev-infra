@@ -75,7 +75,8 @@ Uses the AWS CLI (no boto3). Already applied once with tag `rum-30d`.
 - CI `deploy.yml` runs ONLY on `repository_dispatch` (`deploy_api`/`deploy_frontend`,
   sent by the API repo) or manual dispatch — never on push. It runs
   `apply -auto-approve`, serialized by a `terraform-apply` concurrency group.
-- `checkov.yml` runs `terraform fmt -check` + `validate` (hard gates) and a Checkov scan
-  (soft-fail) on push/PR + weekly. Run `terraform fmt -recursive` before committing.
+- `checkov.yml` runs `terraform fmt -check` + `validate` and a hard-gated Checkov scan
+  on push/PR + weekly. Accepted findings use resource-scoped suppressions with reasons;
+  do not add workflow-wide skips. Run `terraform fmt -recursive` before committing.
 - `.terraform.lock.hcl` is committed — after changing provider versions, run
   `terraform init -upgrade` and commit the updated lock file.
