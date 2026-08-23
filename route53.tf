@@ -92,6 +92,15 @@ resource "aws_route53_record" "dmarc" {
   records = ["v=DMARC1; p=none;"]
 }
 
+# Discord domain verification
+resource "aws_route53_record" "discord_verification" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "_discord.${var.domain_name}"
+  type    = "TXT"
+  ttl     = "300"
+  records = ["dh=bb33c427e21f1af125330a23c521715301f19089"]
+}
+
 # iCloud Mail
 resource "aws_route53_record" "icloud_mx" {
   zone_id = aws_route53_zone.main.zone_id
